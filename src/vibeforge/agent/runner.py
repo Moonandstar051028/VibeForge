@@ -175,7 +175,12 @@ def run_agent(url, context, workspace, trace, prompt_path, api_key="", analysis_
     return _run_qwen_agent(url, context, Path(workspace), trace, system, api_key, analysis_only)
 
 
-def worker(context_path, workspace, trace, result_path, url, prompt_path, api_key="", analysis_only=False):
+def worker(context_path, workspace, trace, result_path, url, prompt_path, api_key="", analysis_only=False, smoke=False):
     context = read_json(context_path)
-    result = run_agent(url, context, Path(workspace), trace, prompt_path, api_key, analysis_only)
+    if smoke:
+        with tempfile.TemporaryDirectory(prefix="vibeforge-agent-smoke-") as directory:
+            result = _run_qwen_agent(url, context, Path(directory), trace, "", api_key, smoke=True)
+        result = {"passed": True, "framework": "Qwen-Agent", "submission": result}
+    else:
+        result = run_agent(url, context, Path(workspace), trace, prompt_path, api_key, analysis_only)
     write_json(result_path, result)

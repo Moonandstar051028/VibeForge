@@ -36,7 +36,10 @@ def serve(directory, port, token):
 
         def do_GET(self):
             if self.path == "/health":
-                self.reply(200, {"ready": True, "instance_token": token, "backend": config.get("backend")})
+                self.reply(200, {"ready": True, "instance_token": token, "backend": config.get("backend"),
+                                 "capabilities": [name for name in ("generate", "logits", "chat", "chat_completion")
+                                                  if callable(getattr(backend, name, None))],
+                                 "precision": config.get("precision"), "device": config.get("device", "cpu")})
             else:
                 self.reply(404, {"error": "not_found"})
 

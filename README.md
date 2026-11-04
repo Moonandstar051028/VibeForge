@@ -9,6 +9,7 @@
 - [本地运行指南](docs/06-local-operations.md)：环境、命令、配置、日志与恢复。
 - [实现与验收报告](docs/07-implementation-validation.md)：逐模块实现、实测结果及当前限制。
 - [Qwen-Agent 接入](docs/08-qwen-agent-integration.md)：组件边界、本地服务协议、工具与验证范围。
+- [多样化引擎系统](docs/09-diverse-engine-system.md)：模型、设备、精度、构建、个性化目标、质量门禁与配置示例。
 
 ## 常用位置
 
@@ -24,9 +25,9 @@
 
 ## 当前阶段
 
-已实现首版单设备、单请求自优化闭环：画像与部署预检、独立控制程序、Qwen-Agent `Assistant`、候选冻结、差分正确性检查、重复性能评测、事务提升与回退、崩溃恢复、持久化日志及知识草案。Qwen-Agent 通过本地推理引擎的 OpenAI 兼容接口调用所配置的 Qwen 模型。
+已实现人工初始引擎上的自优化闭环，并扩展为模型、设备、运行精度和需求可组合的活动。支持显式精度白名单、独立质量门禁、并发客户端评测、自定义限时构建、多个优化目标、事务提升与回退，以及持久化上下文。Qwen-Agent `Assistant` 通过当前稳定引擎调用所配置的本地模型。
 
-47 项工程测试通过，覆盖 Qwen-Agent 工具调用、候选编辑、独立 worker、最终分析、评测与回退。CPU 测试引擎和模拟 OpenAI 服务不代表真实模型的优化能力。真实 Qwen BF16 部署验收仍因内存不足失败，详见验收报告。
+本机已验证工程闭环，以及随机小型 GPT-2/Llama 的 FP32、BF16 CPU 推理接口。CPU 夹具、随机模型和模拟服务不代表真实模型优化能力；真实 Qwen35B、量化、CUDA/ROCm 完整验收范围见验收报告。
 
 ## 快速验证
 
@@ -34,8 +35,9 @@
 cd /path/to/VibeForge
 bash scripts/dev/bootstrap.sh
 .venv/bin/python -m pytest -m 'not target' -q
+.venv/bin/vibeforge capabilities
 .venv/bin/vibeforge run my-toy-run --config configs/campaigns/toy.json
 .venv/bin/vibeforge status my-toy-run
 ```
 
-控制程序使用 Python 3.10 及以上版本，当前进程管理和文件写入限制要求 Linux Landlock。初始后端提供纯 Python 测试引擎及 Transformers 文本推理适配；原生编译、多模态和并发优化尚未实现。
+控制程序使用 Python 3.10 及以上版本，进程管理和文件写入限制要求 Linux Landlock。初始后端提供纯 Python 测试引擎及 Transformers 文本推理适配；其他运行库通过人工 `engine.py` 桥接。并发 HTTP 请求目前串行进入后端，没有动态批处理；多模态尚未验收。

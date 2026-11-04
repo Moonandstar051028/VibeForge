@@ -32,7 +32,7 @@
 | 1. 恢复上下文 | 检查稳定服务，提供上轮结果和历史索引 | 先分析上一轮，再读取相关历史与知识 |
 | 2. 提出假设 | 分配时间、计算与修改预算 | 描述瓶颈、证据、计划变更、预期指标与风险 |
 | 3. 生成候选 | 创建基于 `stable_ref` 的独立工作区 | 修改引擎，执行局部检查，提交差异和说明 |
-| 4. 冻结与构建 | 固定候选哈希，停止 Agent，构建候选 | 此后不再直接修改该候选 |
+| 4. 构建并冻结 | 停止 Agent，按冻结配方构建，复查契约，再冻结源码和构建产物哈希 | 此后不再直接修改该发布版本 |
 | 5. 验证正确性 | 执行分层测试、资源与接口检查 | 无需保持运行 |
 | 6. 评测性能 | 在受控条件下交错测量稳定版和候选版 | 无需保持运行 |
 | 7. 形成决策 | 依据固定规则接受、拒绝或安排复测 | 后续会话读取完整决策证据 |
@@ -51,9 +51,9 @@ stateDiagram-v2
     RECOVERING --> BENCHMARKING: 环境一致且存在待复测候选
     RECOVERING --> HALTED: 无法恢复已验证服务
     READY --> AGENT_RUNNING: 启动会话并注入恢复资料
-    AGENT_RUNNING --> CANDIDATE_FROZEN: 提交候选
-    CANDIDATE_FROZEN --> BUILDING
-    BUILDING --> VALIDATING: 构建成功
+    AGENT_RUNNING --> BUILDING: 提交候选并通过运行时授权检查
+    BUILDING --> CANDIDATE_FROZEN: 构建成功且部署预检通过
+    CANDIDATE_FROZEN --> VALIDATING: 冻结源码和构建产物
     VALIDATING --> BENCHMARKING: 正确性与约束通过
     BENCHMARKING --> DECIDING: 有效样本齐备
     BUILDING --> DECIDING: 构建失败

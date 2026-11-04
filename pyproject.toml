@@ -31,4 +31,7 @@ namespaces = false
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra"
-markers = ["target: real Qwen deployment; requires the configured inference environment and sufficient memory"]
+markers = [
+    "target: real Qwen deployment; requires the configured inference environment and sufficient memory",
+    "inference: offline tiny Transformers CPU models; requires VIBEFORGE_TEST_INFERENCE_PYTHON",
+]

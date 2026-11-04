@@ -7,10 +7,18 @@ def create_context(database, paths, campaign_id, config, workspace, iteration):
     state = database.get(campaign_id)
     history = database.iterations(campaign_id)
     previous = next((row for row in reversed(history) if row["iteration"] < iteration), None)
-    profile = read_json(paths.data / "profiles" / f"{state['profile_hash']}.json")
+    pending = [row for row in history if row["iteration"] < iteration and row.get("analysis_pending")]
+    if pending:
+        previous = pending[0]
+    profile_hash = state.get("version_profiles", {}).get(state.get("stable_ref"), state["profile_hash"])
+    profile = read_json(paths.data / "profiles" / f"{profile_hash}.json")
     value = {
         "campaign_id": campaign_id, "iteration": iteration, "stable_ref": state.get("stable_ref"),
-        "config_hash": config["config_hash"], "profile_hash": state.get("profile_hash"),
+        "config_hash": config["config_hash"], "profile_hash": profile_hash,
+        "precision": read_json(workspace / "engine.json").get("precision", config["precision"]),
+        "optimization": config["optimization"], "requirements": config["requirements"],
+        "engine_adapter": config["engine"],
+        "pending_analyses": [row["iteration"] for row in pending],
         "workload": config["workload"], "protocol": config["evaluation"],
         "workspace": str(workspace), "previous": previous,
         "history": [{"iteration": row["iteration"], "candidate": row.get("candidate"),

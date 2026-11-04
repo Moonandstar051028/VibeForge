@@ -1,0 +1,5 @@
+[
+  {"id": "arithmetic", "mode": "chat", "prompt": "只输出计算结果：17 × 19", "expected": "323", "match": "exact", "max_new_tokens": 32},
+  {"id": "capital", "mode": "chat", "prompt": "只用英文回答：法国的首都是哪座城市？", "expected": "Paris", "match": "contains", "max_new_tokens": 32},
+  {"id": "json", "mode": "chat", "prompt": "只输出一个 JSON 对象，其 ok 字段为布尔值 true。", "expected": "\"ok\"\\s*:\\s*true", "match": "regex", "max_new_tokens": 48}
+]

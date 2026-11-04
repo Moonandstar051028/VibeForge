@@ -39,6 +39,10 @@ VibeForge/
 │   ├── campaigns/                # 优化活动、预算、停止条件及配置引用
 │   ├── models/                   # 模型、精度、权重引用与功能约束
 │   ├── hardware/                 # 设备选择与硬件运行约束
+│   ├── engines/                  # 人工初始引擎、适配器和构建命令
+│   ├── precision/                # 运行精度与量化配置
+│   ├── optimization/             # 精度变化授权与白名单
+│   ├── requirements/             # 个性化主目标和资源上限
 │   ├── workloads/                # 长度、批大小、并发、采样与负载权重
 │   ├── evaluation/               # 正确性标准、指标、统计与复测协议
 │   └── agent/                    # Agent 连接、工具、上下文与超时设置
@@ -81,14 +85,14 @@ VibeForge/
 | `src/vibeforge/cli/` | 参数解析、命令分发、状态展示 | `main.py`、`campaign.py`、`status.py` |
 | `src/vibeforge/controller/` | 独立监督、状态迁移、设备租约、预算、准入和恢复 | `supervisor.py`、`state_machine.py`、`recovery.py`、`admission.py`、`budgets.py` |
 | `src/vibeforge/agent/` | 会话生命周期、工具执行、恢复上下文和分析任务 | `runner.py`、`context.py`、`tools.py`、`analysis.py` |
-| `src/vibeforge/engine/` | 后端接口、构建、进程、健康检查、写入限制和推理调用 | `backend.py`、`builder.py`、`process.py`、`client.py`、`server.py`、`sandbox.py` |
-| `src/vibeforge/profiling/` | 模型结构解析、硬件探测、软件环境与运行采样 | `model.py`、`hardware.py`、`environment.py`、`sampler.py`、`collector.py` |
-| `src/vibeforge/evaluation/` | 数值与功能验证、基准测量、汇总统计、参考适配 | `correctness.py`、`performance.py`、`statistics.py`、`reference.py` |
+| `src/vibeforge/engine/` | 后端声明、接口、构建、进程、健康检查、写入限制和推理调用 | `adapters.py`、`backend.py`、`builder.py`、`process.py`、`client.py`、`server.py`、`sandbox.py` |
+| `src/vibeforge/profiling/` | 模型结构解析、硬件探测、软件环境与运行采样 | `model.py`、`hardware.py`、`environment.py`、`sampler.py`、`resources.py`、`collector.py` |
+| `src/vibeforge/evaluation/` | 数值与功能验证、独立质量门禁、基准测量、汇总统计、参考适配 | `correctness.py`、`quality.py`、`performance.py`、`statistics.py`、`reference.py` |
 | `src/vibeforge/versioning/` | 冻结候选、哈希、发布清单、提升事务、稳定指针与回退 | `candidate.py`、`artifacts.py`、`release.py`、`promotion.py`、`rollback.py` |
 | `src/vibeforge/observability/` | 事件写入、输出采集、指标记录和报告渲染 | `events.py`、`logs.py`、`metrics.py`、`reports.py` |
 | `src/vibeforge/knowledge/` | 经验抽取、规则验证、索引检索、证据关联 | `extractor.py`、`validator.py`、`retriever.py`、`registry.py` |
 | `src/vibeforge/storage/` | 路径解析、数据库访问、原子写入、刷盘与锁 | `paths.py`、`database.py`、`atomic.py`、`locks.py` |
-| `src/vibeforge/contracts/` | 画像、活动、候选、事件、结果与决策的数据契约 | `profile.py`、`campaign.py`、`candidate.py`、`evaluation.py`、`event.py` |
+| `src/vibeforge/contracts/` | 画像、活动、精度、需求、候选、事件、结果与决策的数据契约 | `profile.py`、`campaign.py`、`precision.py`、`requirements.py`、`candidate.py`、`evaluation.py`、`event.py` |
 
 ### 3.1 容易混淆的边界
 
@@ -116,11 +120,15 @@ VibeForge/
 | `configs/campaigns/` | 组合引用、预算、停止条件、数据根目录 | `<campaign-name>.json` |
 | `configs/models/` | 模型路径、精度、功能声明 | `<model-name>.json` |
 | `configs/hardware/` | 设备描述和运行约束 | `<device-name>.json` |
+| `configs/engines/` | 人工初始引擎、适配器、能力、依赖与构建命令 | `<adapter-name>.json` |
+| `configs/precision/` | 权重/计算/KV/累加精度与量化 | `<precision-name>.json` |
+| `configs/optimization/` | 精度搜索授权及白名单 | `<policy-name>.json` |
+| `configs/requirements/` | 主目标、资源上限及文字偏好 | `<requirements-name>.json` |
 | `configs/workloads/` | 提示词、输出长度、并发和固定用例 | `<workload-name>.json` |
 | `configs/evaluation/` | 正确性标准、指标、统计门槛和复测规则 | `<protocol-name>.json` |
 | `configs/agent/` | Agent 模式、工具、提示词引用与会话预算 | `<agent-profile>.json` |
 
-首版配置加载器只接受 JSON，避免控制程序额外依赖 YAML 库。模型权重实体通过外部路径引用；实际采集结果、执行状态与指标写入 `var/`。硬件配置暂为描述输入，实际设备以探测结果为准；运行约束位于评测和模型配置。
+配置加载器只接受 JSON。模型权重实体通过外部路径引用；实际采集结果、执行状态与指标写入 `var/`。硬件配置可给出设备、架构与名称约束，实际能力以推理环境探测为准。`scripts/evaluation/` 保存受信任的任务质量评测程序；它的用例仍放在 `benchmarks/cases/`。
 
 ### 4.2 正式评测与项目测试
 

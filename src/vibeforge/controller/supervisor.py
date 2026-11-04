@@ -5,10 +5,13 @@ import random
 import sys
 import time
 import uuid
+import json
+import hashlib
+from copy import deepcopy
 from pathlib import Path
 from vibeforge.agent.analysis import write_analysis
 from vibeforge.agent.context import create_context
-from vibeforge.agent.runner import smoke_agent
+from vibeforge.contracts.precision import precision_fields, validate_candidate_runtime
 from vibeforge.controller.admission import decide
 from vibeforge.controller.budgets import stop_reason
 from vibeforge.controller.recovery import recover
@@ -18,6 +21,7 @@ from vibeforge.engine.process import EngineProcess
 from vibeforge.evaluation.correctness import evaluate_correctness
 from vibeforge.evaluation.performance import measure
 from vibeforge.evaluation.reference import capture_reference, load_reference
+from vibeforge.evaluation.quality import run_quality
 from vibeforge.knowledge.extractor import extract_draft
 from vibeforge.knowledge.registry import load_rules
 from vibeforge.knowledge.retriever import retrieve
@@ -29,7 +33,7 @@ from vibeforge.storage.atomic import atomic_write, read_json, write_json, digest
 from vibeforge.storage.database import Database
 from vibeforge.storage.locks import exclusive_lock
 from vibeforge.storage.paths import identifier
-from vibeforge.versioning.artifacts import verify_release
+from vibeforge.versioning.artifacts import verify_release, source_hash
 from vibeforge.versioning.candidate import create_workspace, write_diff
 from vibeforge.versioning.promotion import begin_promotion, commit_promotion
 from vibeforge.versioning.release import freeze
@@ -54,7 +58,7 @@ class Supervisor:
             raise ValueError(f"Campaign already exists: {self.campaign_id}")
         self.directory.mkdir(parents=True, exist_ok=True)
         write_json(self.directory / "manifest.json", config)
-        for section in ("model", "hardware", "workload", "evaluation", "agent"):
+        for section in ("model", "hardware", "workload", "evaluation", "agent", "precision", "engine", "requirements", "optimization"):
             write_json(self.directory / "configs" / f"{section}.json", config[section])
         atomic_write(self.directory / "configs" / "agent-prompt.md",
                      (self.paths.project / config["agent"]["prompt"]).read_text())
@@ -98,6 +102,69 @@ class Supervisor:
         self.database.update(self.campaign_id, {"active_ref": None}, "engine_stopped")
         self.events.sync()
 
+    def worker_environment(self):
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = os.pathsep.join([str(self.paths.project / "src"),
+                                                     *self.config.get("inference_pythonpath", ()),
+                                                     environment.get("PYTHONPATH", "")])
+        environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment["QWEN_AGENT_MAX_LLM_CALL_PER_RUN"] = str(self.config["agent"].get("max_turns", 6))
+        return environment
+
+    def smoke(self, client, folder, stem="agent-smoke"):
+        """Smoke tests are owned workers too: a stalled LLM call cannot hang recovery."""
+        folder.mkdir(parents=True, exist_ok=True)
+        context, result = folder / f"{stem}-context.json", folder / f"{stem}.json"
+        write_json(context, {"agent": self.config["agent"], "model": self.config["model"]})
+        token = uuid.uuid4().hex
+        command = [sys.executable, "-u", "-m", "vibeforge.cli.main", "--project", str(self.paths.project),
+                   "agent-worker", "--smoke", "--context", str(context), "--workspace", str(folder),
+                   "--trace", str(folder / f"{stem}.jsonl"), "--result", str(result), "--url", client.url,
+                   "--prompt", str(self.directory / "configs/agent-prompt.md"), "--token", token]
+        record = run_command(command, folder, folder / f"{stem}.log",
+                             timeout=min(self.config["budget"]["agent_seconds"], self.config["agent"].get("timeout_seconds", 180)),
+                             env=self.worker_environment(), process_record=self.paths.data / "state" / f"{self.campaign_id}.agent.json",
+                             token=token, trace=folder / "commands.jsonl")
+        if record["exit_code"] or not read_json(result).get("passed"):
+            raise RuntimeError(f"Qwen-Agent readiness failed; see {folder / (stem + '.log')}")
+        return read_json(result)
+
+    def build_workspace(self, workspace, folder):
+        engine = self.config["engine"]
+        cache = self.paths.data / "cache" / "build"
+        cache.mkdir(parents=True, exist_ok=True)
+        replacements = {"workspace": str(workspace), "cache": str(cache), "python": self.config["runtime_python"]}
+        recipe = [arg.format_map(replacements) for arg in engine["build_command"]]
+        if recipe:
+            token = uuid.uuid4().hex
+            command = [self.config["runtime_python"], "-u", "-m", "vibeforge.cli.main", "--project", str(self.paths.project),
+                       "build-worker", "--directory", str(workspace), "--cache", str(cache),
+                       "--recipe", json.dumps(recipe), "--token", token, "--device", self.config["model"]["device"]]
+            env = self.worker_environment()
+            env.update(TMPDIR=str(cache), XDG_CACHE_HOME=str(cache), CUDA_CACHE_PATH=str(cache / "cuda"),
+                       TRITON_CACHE_DIR=str(cache / "triton"), TORCH_EXTENSIONS_DIR=str(cache / "extensions"), HF_HUB_OFFLINE="1")
+            record = run_command(command, workspace, folder / "logs/build.log", engine["build_timeout_seconds"],
+                                 env=env, trace=folder / "commands.jsonl",
+                                 process_record=self.paths.data / "state" / f"{self.campaign_id}.build.json", token=token)
+            if record["exit_code"]:
+                raise RuntimeError(f"Engine build failed; see {folder / 'logs/build.log'}")
+        report = build(workspace)
+        write_json(folder / "build.json", report)
+        return report
+
+    def quality(self, client, version, folder, baseline=None):
+        settings = self.config["evaluation"].get("quality")
+        if not settings:
+            return {"passed": True, "enabled": False}
+        manifest = read_json(self.paths.release(version) / "manifest.json")
+        return run_quality(client, settings, folder, {
+            "project": str(self.paths.project), "campaign_id": self.campaign_id, "version": version,
+            "source_hash": manifest["source_hash"], "config_hash": self.config["config_hash"],
+            "profile_hash": self.database.get(self.campaign_id).get("version_profiles", {}).get(version),
+            "precision": read_json(self.paths.release(version) / "engine.json")["precision"],
+            "process_record": str(self.paths.data / "state" / f"{self.campaign_id}.quality.json"),
+        }, baseline=baseline)
+
     def agent_session(self, client, workspace, iteration, analysis_only=False):
         folder = self.directory / "iterations" / f"{iteration:04d}"
         if analysis_only:
@@ -105,7 +172,8 @@ class Supervisor:
         folder.mkdir(parents=True, exist_ok=True)
         context = create_context(self.database, self.paths, self.campaign_id, self.config, workspace, iteration)
         context["knowledge"] = retrieve(load_rules(self.paths.project / "knowledge"),
-                                        {"profile_hash": self.database.get(self.campaign_id).get("profile_hash")})
+                                        {"profile_hash": context["profile_hash"], "precision": context["precision"],
+                                         "device": self.config["model"]["device"], "objective": self.config["requirements"]["objective"]})
         context_path, result_path = folder / "context.json", folder / "agent-result.json"
         write_json(context_path, context)
         token = uuid.uuid4().hex
@@ -116,15 +184,11 @@ class Supervisor:
                    "--token", token]
         if analysis_only:
             command.append("--analysis-only")
-        environment = dict(os.environ)
-        environment["PYTHONPATH"] = str(self.paths.project / "src") + os.pathsep + environment.get("PYTHONPATH", "")
-        environment["PYTHONDONTWRITEBYTECODE"] = "1"
-        environment["QWEN_AGENT_MAX_LLM_CALL_PER_RUN"] = str(self.config["agent"].get("max_turns", 6))
         self.events.emit("agent_started", iteration_id=iteration, payload={"analysis_only": analysis_only})
         record = run_command(command, workspace, folder / "logs" / "agent.log",
                              timeout=min(self.config["budget"]["agent_seconds"],
                                          self.config["agent"].get("timeout_seconds", self.config["budget"]["agent_seconds"])),
-                             env=environment,
+                             env=self.worker_environment(),
                              trace=folder / "commands.jsonl",
                              process_record=self.paths.data / "state" / f"{self.campaign_id}.agent.json", token=token,
                              heartbeat=lambda: self.events.emit("agent_heartbeat", iteration_id=iteration))
@@ -139,7 +203,8 @@ class Supervisor:
             self.database.iteration(self.campaign_id, previous["iteration"], previous)
             write_analysis(self.directory / "iterations" / f"{previous['iteration']:04d}" / "analysis.md",
                            previous, result["previous_analysis"])
-            self.database.update(self.campaign_id, {"analysis_pending": False}, "analysis_completed",
+            pending = any(row.get("analysis_pending") for row in self.database.iterations(self.campaign_id))
+            self.database.update(self.campaign_id, {"analysis_pending": pending}, "analysis_completed",
                                  iteration_id=previous["iteration"])
             self.events.sync()
         return result
@@ -157,25 +222,47 @@ class Supervisor:
             self.events.sync()
             return False
         workspace = self.paths.workspace(self.campaign_id, 0)
+        if source_hash(self.config["engine"]["initial_source"]) != self.config["engine"]["initial_source_hash"]:
+            raise ValueError("Human-supplied initial engine changed after configuration was frozen")
+        engine_config = read_json(Path(self.config["engine"]["initial_source"]) / "engine.json")
+        engine_config.update(precision_fields(self.config["precision"]))
+        engine_config.update(device=self.config["model"]["device"], model_loader=self.config["engine"]["model_loader"])
+        if not self.config["model"].get("fixture"):
+            model = self.config["model"]
+            engine_config.update(model_path=model["path"], max_context=model.get("max_context", 4096))
         if not workspace.exists():
             create_workspace(self.paths.project / self.config["engine_template"], workspace)
-            engine_config = read_json(workspace / "engine.json")
-            if not self.config["model"].get("fixture"):
-                model = self.config["model"]
-                engine_config.update(model_path=model["path"], dtype=model.get("dtype", "bfloat16"),
-                                     device=model.get("device", "cuda"), quantization=model.get("quantization"),
-                                     max_context=model.get("max_context", 4096))
-            write_json(workspace / "engine.json", engine_config)
-        build(workspace)
+        write_json(workspace / "engine.json", engine_config)
+        self.build_workspace(workspace, self.directory / "bootstrap")
+        validate_candidate_runtime(engine_config, read_json(workspace / "engine.json"),
+                                   {"optimization": {"allow_precision_changes": False}})
         release = freeze(workspace, self.paths, None, self.config["runtime_python"], self.config["config_hash"])
+        self.database.update(self.campaign_id, {"version_profiles": {release["version_id"]: profile["profile_hash"]}}, "release_profile_bound")
         client = self.start_engine(release["version_id"], self.directory / "bootstrap" / "engine.log")
-        smoke = smoke_agent(client, trace=self.directory / "bootstrap" / "agent-smoke.jsonl")
-        write_json(self.directory / "bootstrap" / "agent-smoke.json", smoke)
+        self.smoke(client, self.directory / "bootstrap")
         cases = read_json(self.directory / "configs" / "cases.json")
-        reference = capture_reference(client, cases, self.directory / "reference.json",
+        protocol = self.config["evaluation"]
+        if protocol.get("reference_path"):
+            raw = Path(protocol["reference_path"]).read_bytes()
+            if hashlib.sha256(raw).hexdigest() != protocol["reference_file_hash"]:
+                raise ValueError("Independent reference was modified")
+            reference = load_reference(protocol["reference_path"])
+            write_json(self.directory / "reference.json", reference)
+            expected = {(p, self.config["workload"]["max_new_tokens"]) for p in self.config["workload"]["prompts"]}
+            actual = {(c["prompt"], c["max_new_tokens"]) for c in reference.get("benchmark_cases", [])}
+            if not expected <= actual:
+                raise ValueError("Independent reference does not cover fixed-length benchmark requests")
+        else:
+            vocab = profile["model"].get("text_config", {}).get("vocab_size", profile["model"].get("vocab_size", 32))
+            reference = capture_reference(client, cases, self.directory / "reference.json",
                                       {"kind": "frozen_bootstrap_backend", "source_hash": release["source_hash"],
-                                       "profile_hash": profile["profile_hash"], "environment": profile["environment"]})
+                                       "profile_hash": profile["profile_hash"], "environment": profile["environment"],
+                                       "vocab_size": vocab}, protocol, self.config["workload"])
         report = evaluate_correctness(client, reference, self.config["evaluation"])
+        initial_quality = self.quality(client, release["version_id"], self.directory / "bootstrap/quality")
+        write_json(self.directory / "initial-quality.json", initial_quality)
+        report["quality"] = initial_quality
+        report["passed"] = report["passed"] and initial_quality["passed"]
         write_json(self.directory / "bootstrap" / "correctness.json", report)
         if not report["passed"]:
             raise RuntimeError("Bootstrap repeatability failed")
@@ -195,10 +282,12 @@ class Supervisor:
             os._exit(86)
         try:
             client = self.start_engine(version, folder / "logs" / "activation.log")
-            write_json(folder / "activation-smoke.json", smoke_agent(client, trace=folder / "activation-smoke.jsonl"))
+            self.smoke(client, folder, "activation-smoke")
             self.state("COMMITTING")
             commit_promotion(self.database, self.campaign_id, operation)
             self.events.sync()
+            if self.config["model"].get("fixture") and os.environ.get("VIBEFORGE_FAILPOINT") == "after_promotion_commit":
+                os._exit(87)
             return client
         except Exception:
             self.restore("activation_failed", folder)
@@ -211,12 +300,12 @@ class Supervisor:
             self.database.update(self.campaign_id, {"state": "HALTED"}, "recovery_failed")
             raise RuntimeError("No committed stable release is available")
         client = self.start_engine(target, folder / "logs" / "restore.log")
-        smoke_agent(client, trace=folder / "restore-smoke.jsonl")
+        self.smoke(client, folder, "restore-smoke")
         rollback_completed(self.database, self.campaign_id, target)
         self.events.sync()
         return client
 
-    def benchmark(self, stable, candidate, folder):
+    def benchmark(self, stable, candidate, folder, attempt=0):
         baseline, challenger = [], []
         protocol, workload = self.config["evaluation"], self.config["workload"]
         for group in range(protocol["repeats"]):
@@ -231,8 +320,12 @@ class Supervisor:
                     for prompt in workload["prompts"]:
                         client.generate(prompt=prompt, max_new_tokens=workload["max_new_tokens"], fixed_length=True)
                 allowed = (self.engine.process.pid,) if self.engine.process else ()
+                manifest = read_json(self.paths.release(version) / "manifest.json")
+                source_bytes = sum((self.paths.release(version) / name).stat().st_size for name in manifest["files"])
                 output.append(measure(client, workload, folder / "benchmarks" / "samples.jsonl",
-                                      version, group, protocol, allowed))
+                                      version, group, protocol, allowed,
+                                      reference=load_reference(self.directory / "reference.json"),
+                                      startup_seconds=client.startup_seconds, source_bytes=source_bytes, attempt=attempt))
                 self.events.emit("measurement_completed", iteration_id=folder.name,
                                  payload={"version": version, "group": group, "sample": output[-1]})
                 self.stop_engine()
@@ -243,7 +336,9 @@ class Supervisor:
         folder = self.directory / "iterations" / f"{number:04d}"
         folder.mkdir(parents=True, exist_ok=True)
         workspace = create_workspace(self.paths.release(stable), self.paths.workspace(self.campaign_id, number))
-        self.database.iteration(self.campaign_id, number, {"parent": stable, "complete": False})
+        source_profile = self.database.get(self.campaign_id).get("version_profiles", {}).get(stable)
+        self.database.iteration(self.campaign_id, number, {"parent": stable, "complete": False,
+            "source_profile_hash": source_profile, "source_precision": read_json(workspace / "engine.json")["precision"]})
         decision = {"outcome": "reject", "reason": "unfinished"}
         failure = False
         try:
@@ -255,28 +350,43 @@ class Supervisor:
             write_diff(self.paths.release(stable), workspace, folder / "change.patch")
             parent_config = read_json(self.paths.release(stable) / "engine.json")
             child_config = read_json(workspace / "engine.json")
-            for key in ("backend", "model_path", "dtype", "device", "quantization", "max_context"):
-                if parent_config.get(key) != child_config.get(key):
-                    raise ValueError(f"Candidate changed fixed engine field: {key}")
+            precision = validate_candidate_runtime(parent_config, child_config, self.config)
+            self.stop_engine()
+            self.state("BUILDING")
+            self.build_workspace(workspace, folder)
+            # Build recipes cannot bypass the same frozen runtime contract.
+            precision = validate_candidate_runtime(parent_config, read_json(workspace / "engine.json"), self.config)
+            candidate_config = deepcopy(self.config)
+            candidate_config["precision"] = precision
+            profile, preflight = collect(candidate_config)
+            write_json(self.paths.data / "profiles" / f"{profile['profile_hash']}.json", profile)
+            write_json(folder / "preflight.json", preflight)
+            self.database.iteration(self.campaign_id, number, {"profile_hash": profile["profile_hash"], "precision": precision})
+            if not preflight["passed"]:
+                raise ValueError("Candidate deployment blocked: " + ",".join(preflight["reasons"]))
             release = freeze(workspace, self.paths, stable, self.config["runtime_python"],
                              self.config["config_hash"], [str(folder)])
             version = release["version_id"]
             write_json(folder / "candidate.json", release)
             self.database.iteration(self.campaign_id, number, {"candidate": version})
+            bindings = self.database.get(self.campaign_id).get("version_profiles", {})
+            bindings[version] = profile["profile_hash"]
+            self.database.update(self.campaign_id, {"version_profiles": bindings}, "release_profile_bound")
             self.state("CANDIDATE_FROZEN")
-            self.stop_engine()
-            self.state("BUILDING")
-            write_json(folder / "build.json", build(self.paths.release(version)))
             self.state("VALIDATING")
             client = self.start_engine(version, folder / "logs" / "correctness.log")
             correctness = evaluate_correctness(client, load_reference(self.directory / "reference.json"),
                                                 self.config["evaluation"])
+            if correctness["passed"]:
+                quality = self.quality(client, version, folder / "quality", read_json(self.directory / "initial-quality.json"))
+                correctness["quality"] = quality
+                correctness["passed"] = quality["passed"]
             write_json(folder / "correctness" / "report.json", correctness)
             self.stop_engine()
             if correctness["passed"]:
                 self.state("BENCHMARKING")
                 for attempt in range(self.config["evaluation"]["max_retests"] + 1):
-                    baseline, challenger = self.benchmark(stable, version, folder)
+                    baseline, challenger = self.benchmark(stable, version, folder, attempt)
                     result = decide(correctness, baseline, challenger, self.config["evaluation"])
                     decision = result.to_dict()
                     write_json(folder / "benchmarks" / f"summary-{attempt}.json",
@@ -288,7 +398,8 @@ class Supervisor:
                         self.state("BENCHMARKING")
             else:
                 self.state("DECIDING")
-                decision = {"outcome": "reject", "reason": "correctness_failed"}
+                reason = "quality_failed" if not correctness.get("quality", {"passed": True})["passed"] else "correctness_failed"
+                decision = {"outcome": "reject", "reason": reason}
             write_json(folder / "decision.json", decision)
             self.database.iteration(self.campaign_id, number, {"decision": decision})
             self.events.emit("admission_decision", iteration_id=number, payload=decision)
@@ -314,7 +425,9 @@ class Supervisor:
             row = self.database.iteration(self.campaign_id, number,
                                           {"decision": decision, "complete": True, "analysis_pending": True})
             write_analysis(folder / "analysis.md", row, None)
-            extract_draft(self.paths, self.campaign_id, row, self.database.get(self.campaign_id).get("profile_hash"))
+            extract_draft(self.paths, self.campaign_id, row, row.get("source_profile_hash", self.database.get(self.campaign_id).get("profile_hash")),
+                          {"precision": row.get("source_precision", self.config["precision"]), "device": self.config["model"]["device"],
+                           "objective": self.config["requirements"]["objective"]})
             state = self.database.get(self.campaign_id)
             self.database.update(self.campaign_id, {
                 "completed_iterations": number, "analysis_pending": True,
@@ -327,6 +440,8 @@ class Supervisor:
         self.config = read_json(self.directory / "manifest.json")
         if self.config["config_hash"] != digest({k: v for k, v in self.config.items() if k != "config_hash"}):
             raise ValueError("Frozen campaign configuration was modified")
+        if self.config.get("schema_version") != 2:
+            raise ValueError("This campaign uses the old evaluation contract; retain its evidence and create a schema v2 campaign")
         with exclusive_lock(self.paths.data / "state" / f"{self.campaign_id}.lock"):
             with exclusive_lock(self.paths.data / "state" / "device.lock"):
                 try:
@@ -353,8 +468,9 @@ class Supervisor:
                         try:
                             version = state["stable_ref"]
                             client = self.start_engine(version, self.directory / "final-analysis" / "engine.log")
-                            self.agent_session(client, self.paths.release(version),
-                                               state["completed_iterations"] + 1, analysis_only=True)
+                            while self.database.get(self.campaign_id).get("analysis_pending"):
+                                self.agent_session(client, self.paths.release(version),
+                                                   state["completed_iterations"] + 1, analysis_only=True)
                         except Exception as error:
                             self.events.emit("final_analysis_failed", payload={"error": str(error)})
                     self.state("STOPPED", stop_reason=reason)

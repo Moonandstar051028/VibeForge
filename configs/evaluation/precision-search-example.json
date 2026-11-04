@@ -1,0 +1,12 @@
+{
+  "repeats": 5, "warmup": 1, "min_gain": 0.02, "confidence": 0.95, "max_retests": 1,
+  "correctness_mode": "approximate", "min_token_agreement": 0.9,
+  "logit_samples": 128, "atol": 0.1, "rtol": 0.05, "max_normalized_rms": 0.05,
+  "require_exclusive_gpu": true,
+  "quality": {
+    "command": ["{python}", "{project}/scripts/evaluation/quality_cases.py", "--request", "{request}", "--output", "{output}",
+                "--cases", "{project}/benchmarks/cases/task-quality-example.json"],
+    "files": ["scripts/evaluation/quality_cases.py", "benchmarks/cases/task-quality-example.json"],
+    "timeout_seconds": 300, "min_scores": {"accuracy": 0.9}, "max_regressions": {"accuracy": 0.02}
+  }
+}

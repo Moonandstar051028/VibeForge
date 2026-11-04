@@ -21,6 +21,7 @@ def parser():
     result.add_argument("--project", default=str(Path.cwd()))
     result.add_argument("--data-root")
     commands = result.add_subparsers(dest="command", required=True)
+    commands.add_parser("capabilities")
     for name in ("profile", "run", "resume", "status", "stop", "events", "report"):
         command = commands.add_parser(name)
         command.add_argument("campaign", nargs="?")
@@ -36,18 +37,31 @@ def parser():
     for name in ("context", "workspace", "trace", "result", "url", "prompt", "token"):
         command.add_argument(f"--{name}", required=True)
     command.add_argument("--analysis-only", action="store_true")
+    command.add_argument("--smoke", action="store_true")
+    command = commands.add_parser("build-worker")
+    for name in ("directory", "cache", "recipe", "token"):
+        command.add_argument(f"--{name}", required=True)
+    command.add_argument("--device", default="cpu")
     return result
 
 
 def main(argv=None):
     args = parser().parse_args(argv)
     project = Path(args.project).resolve()
+    if args.command == "capabilities":
+        from vibeforge.engine.adapters import capabilities
+        print(json.dumps(capabilities(), indent=2, ensure_ascii=False))
+        return 0
     if args.command == "serve":
         serve(args.directory, args.port, args.token)
         return 0
     if args.command == "agent-worker":
         worker(args.context, args.workspace, args.trace, args.result, args.url,
-               args.prompt, args.token, args.analysis_only)
+               args.prompt, args.token, args.analysis_only, args.smoke)
+        return 0
+    if args.command == "build-worker":
+        from vibeforge.engine.builder import build_worker
+        build_worker(args.directory, args.cache, args.recipe, args.device)
         return 0
     config = None
     campaign_id = args.campaign

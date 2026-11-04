@@ -1,0 +1,10 @@
+{
+  "name": "precision-search-example", "data_root": "var",
+  "model": "configs/models/qwen36-35b.json", "hardware": "configs/hardware/cuda.json",
+  "engine": "configs/engines/transformers.json", "precision": "configs/precision/bf16.json",
+  "optimization": "configs/optimization/precision-search.json", "requirements": "configs/requirements/throughput.json",
+  "workload": "configs/workloads/smoke.json", "evaluation": "configs/evaluation/precision-search-example.json",
+  "agent": "configs/agent/local.json", "runtime_python": "python3",
+  "inference_pythonpath": ["var/cache/inference-packages"], "startup_timeout": 600, "request_timeout": 180,
+  "budget": {"max_iterations": 4, "max_seconds": 7200, "agent_seconds": 240, "max_failures": 3}
+}

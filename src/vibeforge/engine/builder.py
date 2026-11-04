@@ -1,6 +1,9 @@
 """Compile candidate Python files in memory and validate their manifest."""
 
 import ast
+import json
+import os
+import subprocess
 from pathlib import Path
 from vibeforge.storage.atomic import read_json
 from vibeforge.versioning.artifacts import inventory
@@ -16,6 +19,17 @@ def build(directory):
         source = path.read_text()
         ast.parse(source, filename=str(path))
         compile(source, str(path), "exec")
-    # Native build commands must be introduced as a separately bounded adapter,
-    # rather than executing arbitrary engine.json command strings.
     return {"passed": True, "files": len(files), "backend": config.get("backend")}
+
+
+def build_worker(directory, cache, command, device="cpu"):
+    """Run the campaign's frozen build recipe with writes confined to scratch/source."""
+    from vibeforge.engine.sandbox import restrict_writes, prepare_device
+    directory, cache = Path(directory).resolve(), Path(cache).resolve()
+    build(directory)
+    prepare_device(device)
+    restrict_writes([directory, cache])
+    argv = json.loads(command)
+    if argv:
+        subprocess.run(argv, cwd=directory, check=True, env=dict(os.environ))
+    return build(directory)

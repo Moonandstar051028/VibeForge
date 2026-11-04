@@ -14,11 +14,13 @@ def prepare_device(device):
     Keep those writes in this trusted setup phase instead of permitting the
     generated backend to mutate shared IPC files.
     """
-    if not str(device).startswith('cuda'):
+    if not str(device).startswith(('cuda', 'rocm')):
         return None
     import torch
+    if str(device).startswith('rocm') != bool(torch.version.hip):
+        raise RuntimeError("Configured CUDA/ROCm backend does not match the inference environment")
     torch.cuda.init()
-    torch.cuda.set_device(device if ':' in device else 0)
+    torch.cuda.set_device(device.replace('rocm', 'cuda', 1) if ':' in device else 0)
     return {'device': torch.cuda.get_device_name(), 'trusted_cuda_initialized': True}
 
 
@@ -60,7 +62,7 @@ def restrict_writes(directories):
             finally:
                 os.close(parent)
         device_paths = {Path('/dev/null'), Path('/dev/zero'), Path('/dev/random'), Path('/dev/urandom')}
-        for pattern in ('nvidia*', 'nvidia-caps/*', 'nvhost*', 'nvmap', 'dri/renderD*'):
+        for pattern in ('nvidia*', 'nvidia-caps/*', 'nvhost*', 'nvmap', 'dri/renderD*', 'kfd'):
             device_paths.update(Path('/dev').glob(pattern))
         device_rights = (1 << 1) | ((1 << 14) if abi >= 3 else 0)
         for path in sorted(device_paths):

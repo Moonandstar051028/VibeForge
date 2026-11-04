@@ -1,0 +1,1 @@
+{"device": "rocm:0", "description": "AMD ROCm 环境；未在本机验证，需 ROCm PyTorch 及兼容模型。"}

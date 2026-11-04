@@ -1,0 +1,1 @@
+{"objective": "latency_p95_seconds", "limits": {"latency_p95_seconds": 60}, "description": "优先降低交互式请求的完整响应时延。"}

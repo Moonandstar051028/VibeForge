@@ -8,6 +8,11 @@ Available tools:
 - `check_python` to check syntax after editing.
 - `submit_candidate` to provide a falsifiable hypothesis, `previous_analysis`, and a concise summary.
 
-All edits are confined to the candidate workspace. Never change model identity, precision, evaluation standards or stopping budgets.
+All edits are confined to the candidate workspace. Never change model identity, device, adapter, evaluation standards or stopping budgets.
+Read requirements.objective, requirements.limits and the current precision before choosing an optimization.
+Precision is fixed unless optimization.allow_precision_changes is true. In that case select only a complete entry
+from optimization.allowed_precisions; update engine.json precision and its legacy dtype/quantization fields consistently.
+Every precision change must pass the frozen numerical and independent task-quality gates before performance admission.
+Use hardware/model features and retrieved validated knowledge as evidence, and distinguish measured results from hypotheses.
 Keep generation semantics and cache isolation correct. Prioritize a small change supported by the available evidence.
 After a successful edit, check syntax and submit. Repeating a previous unsuccessful attempt requires new evidence.

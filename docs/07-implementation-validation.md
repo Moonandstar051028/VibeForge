@@ -1,8 +1,43 @@
-# 07：首版实现与本地验收报告
+# 07：实现与本地验收报告
 
 验证日期：2026-11-04（北京时间）；事件文件保存 UTC 时间。
 
-## 1. 结论
+## 0. 多样化系统增量验收（schema v2）
+
+现行能力、字段和运行边界见 [09：多样化引擎系统](09-diverse-engine-system.md)。后续各节保留首版历史验收，旧测试数量和内存观测不代表当前实时状态。
+
+| 本次增量 | 结果 |
+| --- | --- |
+| 完整工程回归 | `82 passed, 1 deselected`，约 98 秒；包含真实小型模型接口项，未选择 Qwen35B 目标测试 |
+| 可组合配置 | 模型、设备、适配器、精度、需求、优化白名单独立配置；旧 dtype/quantization 字段归一化兼容 |
+| 多格式画像 | 单文件/分片 safetensors、GGUF 头部、受限路径 manifest；目标精度参与内存估算与画像身份 |
+| 精度搜索闭环 | 白名单内切换通过时提升；独立质量失败时恢复初始稳定版本；恢复上下文使用稳定版本精度 |
+| 性能路径一致性 | 普通与固定长度生成都受差分检查，计时请求逐次检查长度与 token，错误快速路径被拒绝 |
+| 个性化目标 | 吞吐最大化；请求 P95/RSS/启动/制品体积最小化；独立资源上限 |
+| 构建及恢复 | 有界构建、制品冻结、越界写入拦截；提交前/后的真实进程崩溃恢复测试 |
+| 真实 CPU 模型 | 离线随机小型 GPT-2、Llama，各 FP32/BF16 共四组合：引擎启动、生成、logits、固定长度及并发请求隔离通过 |
+| 未验证范围 | 真实 Qwen35B 完整部署和 Agent、多种量化内核、CUDA/ROCm 完整模型优化、长上下文和多模态 |
+
+新增真实小模型测试由本机已有推理解释器运行，无网络下载，不使用已有大模型权重。随机权重只验证软件接口，不衡量模型质量或自优化收益。
+
+本次推理环境为 PyTorch `2.13.0+cu132`、Transformers `5.19.0`。Qwen35B 元数据预检重新读取了 1,045 个 tensor，`missing_packages=[]`；权重为 71,903,645,408 字节，BF16 需求估算仍为 84,098,387,984 字节（78.32 GiB），本次可用内存 31,699,218,432 字节（29.52 GiB），结果为 `insufficient_memory`。没有加载完整大模型权重或运行其 Agent。
+
+复现：
+
+```bash
+# 框架工程测试；未设置推理解释器时，真实小模型接口项明确跳过
+.venv/bin/python -m pytest -m 'not target' -q
+
+# 将真实小模型接口项纳入完整工程检查
+VIBEFORGE_TEST_INFERENCE_PYTHON=/path/to/transformers-env/bin/python \
+  .venv/bin/python -m pytest -m 'not target' \
+  --junitxml=var/validation-diversity/tests.xml -q
+```
+
+真实 CPU 单项 JUnit：`var/validation-diversity/transformers-cpu.xml`。
+完整回归 JUnit：`var/validation-diversity/tests.xml`。另检查 93 个 Python 文件语法、35 个静态 JSON，以及 README/docs 中的 Markdown 文档链接；全部通过。
+
+## 1. 首版结论（历史）
 
 | 验收项 | 结果 |
 | --- | --- |
@@ -120,7 +155,7 @@ missing_packages = []
 
 下一步是提供足够空闲内存与满足评测约束的设备时段，使用已配置的推理环境重新运行真实目标测试。若选择量化，应使用单独活动，重新建立正确性参考并实测该后端兼容性。
 
-## 6. 当前实现边界
+## 6. 首版实现边界（历史，现行边界见 09）
 
 | 方面 | 边界 |
 | --- | --- |

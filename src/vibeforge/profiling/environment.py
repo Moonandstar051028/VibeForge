@@ -14,7 +14,18 @@ def inspect_environment(python=None, extra_paths=()):
             "import importlib.metadata as m,json,sys;"
             "names=['torch','transformers','safetensors','accelerate','bitsandbytes'];"
             "found={p.metadata['Name'].lower():p.version for p in m.distributions()};"
-            "print(json.dumps({'python':sys.version,'packages':{n:found.get(n) for n in names}}))"
+            "result={'python':sys.version,'packages':{**found,**{n:found.get(n) for n in names}}};\n"
+            "try:\n"
+            " import torch\n"
+            " runtime={'cpu':True,'backend':'rocm' if torch.version.hip else 'cuda','devices':[]}\n"
+            " if torch.cuda.is_available():\n"
+            "  for i in range(torch.cuda.device_count()):\n"
+            "   p=torch.cuda.get_device_properties(i); free,total=torch.cuda.mem_get_info(i)\n"
+            "   runtime['devices'].append({'index':i,'name':p.name,'total_bytes':int(total),'free_bytes':int(free),"
+            "'bf16_supported':bool(torch.cuda.is_bf16_supported()),'capability':list(torch.cuda.get_device_capability(i))})\n"
+            " result['runtime']=runtime\n"
+            "except Exception as e: result['runtime']={'probe_error':str(e)}\n"
+            "print(json.dumps(result))"
         )
         try:
             environment = dict(os.environ)

@@ -9,6 +9,7 @@ from urllib.error import HTTPError
 class EngineClient:
     def __init__(self, url, timeout=120):
         self.url, self.timeout = url.rstrip("/"), timeout
+        self.startup_seconds = None
 
     def request(self, operation, payload=None):
         data = None if payload is None else json.dumps(payload).encode()

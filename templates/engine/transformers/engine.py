@@ -1,4 +1,4 @@
-"""Text-only trusted bootstrap backend for local Qwen safetensors."""
+"""User-supplied Transformers bootstrap for local autoregressive text models."""
 
 import time
 import json
@@ -12,23 +12,42 @@ MODEL = TOKENIZER = TORCH = None
 def load(config):
     global CONFIG, MODEL, TOKENIZER, TORCH
     import torch
-    from transformers import AutoModelForImageTextToText, AutoTokenizer
+    from transformers import AutoConfig, AutoModelForCausalLM, AutoModelForImageTextToText, AutoTokenizer
+    from vibeforge.contracts.precision import engine_precision
     CONFIG, TORCH = config, torch
     torch.set_num_threads(config.get("num_threads", 8))
-    dtype = getattr(torch, config.get("dtype", "bfloat16"))
+    precision = engine_precision(config)
+    dtype = getattr(torch, precision["compute_dtype"])
+    device = config.get("device", "cpu").replace("rocm", "cuda", 1)
     arguments = {"local_files_only": True, "trust_remote_code": False,
-                 "dtype": dtype, "device_map": config.get("device", "cuda")}
-    if config.get("quantization") == "bitsandbytes-4bit":
+                 "dtype": dtype}
+    if device != "cpu" or precision["quantization"] != "none":
+        arguments["device_map"] = device
+    quantization = precision["quantization"]
+    if quantization in ("bnb-nf4", "bnb-fp4", "bnb-int8"):
         from transformers import BitsAndBytesConfig
-        arguments["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True, bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=dtype, bnb_4bit_use_double_quant=True)
-    MODEL = AutoModelForImageTextToText.from_pretrained(config["model_path"], **arguments).eval()
+        arguments["quantization_config"] = (BitsAndBytesConfig(load_in_8bit=True) if quantization == "bnb-int8" else
+            BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="fp4" if quantization == "bnb-fp4" else "nf4",
+                              bnb_4bit_compute_dtype=dtype, bnb_4bit_use_double_quant=precision["double_quant"]))
+    elif quantization != "none":
+        raise ValueError("This Transformers template needs an explicit loader for custom quantization")
+    if precision["kv_cache_dtype"] != "auto" or precision["accumulation_dtype"] != "auto":
+        raise ValueError("Explicit KV/accumulation precision requires a dedicated backend")
+    model_config = AutoConfig.from_pretrained(config["model_path"], local_files_only=True, trust_remote_code=False)
+    if getattr(model_config, "quantization_config", None):
+        raise ValueError("Prequantized checkpoints require an explicit adapter matching their stored quantization")
+    loader = config.get("model_loader", "auto")
+    if loader == "auto":
+        loader = "image_text" if any("ForConditionalGeneration" in name for name in model_config.architectures or []) else "causal_lm"
+    model_class = AutoModelForImageTextToText if loader == "image_text" else AutoModelForCausalLM
+    MODEL = model_class.from_pretrained(config["model_path"], **arguments).eval()
+    if "device_map" not in arguments:
+        MODEL = MODEL.to(device)
     TOKENIZER = AutoTokenizer.from_pretrained(config["model_path"], local_files_only=True, trust_remote_code=False)
 
 
 def synchronize():
-    if CONFIG.get("device", "cuda").startswith("cuda"):
+    if CONFIG.get("device", "cpu").startswith(("cuda", "rocm")):
         TORCH.cuda.synchronize()
 
 
@@ -106,6 +125,19 @@ def parse_tool_calls(text, tools=None):
                 value = json.loads(value)
             arguments[name] = value
         calls.append({"name": function.group(1).strip(), "arguments": arguments})
+    # Several non-Qwen chat templates emit an unwrapped JSON function call.
+    if not calls:
+        try:
+            value = json.loads(text.strip())
+            values = value.get("tool_calls", [value]) if isinstance(value, dict) else value
+            for call in values:
+                function = call.get("function", call)
+                if function.get("name") in schemas:
+                    arguments = function.get("arguments", function.get("parameters", {}))
+                    calls.append({"name": function["name"], "arguments":
+                                  json.loads(arguments) if isinstance(arguments, str) else arguments})
+        except (ValueError, TypeError, AttributeError):
+            pass
     return calls
 
 

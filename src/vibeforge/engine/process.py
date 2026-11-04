@@ -69,6 +69,7 @@ class EngineProcess:
         env["TOKENIZERS_PARALLELISM"] = "false"
         env["CUDA_CACHE_PATH"] = str(self.paths.data / "cache" / "cuda")
         env["TRITON_CACHE_DIR"] = str(self.paths.data / "cache" / "triton")
+        env["TORCH_EXTENSIONS_DIR"] = str(self.paths.data / "cache" / "extensions")
         scratch = self.paths.data / "cache" / "engine-scratch"
         scratch.mkdir(parents=True, exist_ok=True)
         env["TMPDIR"] = str(scratch)
@@ -93,6 +94,7 @@ class EngineProcess:
             try:
                 ready = EngineClient(client.url, 1).health()
                 if ready.get("instance_token") == token:
+                    client.startup_seconds = time.monotonic() - (deadline - self.startup_timeout)
                     return client
             except (OSError, ValueError, RuntimeError):
                 pass

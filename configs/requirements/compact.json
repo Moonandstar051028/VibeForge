@@ -1,0 +1,1 @@
+{"objective": "source_bytes", "limits": {"peak_rss_bytes": 8589934592}, "description": "在 8 GiB 进程 RSS 上限内减小发布制品。"}

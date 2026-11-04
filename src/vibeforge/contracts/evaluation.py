@@ -10,6 +10,8 @@ class Decision:
     gain: float | None = None
     lower: float | None = None
     upper: float | None = None
+    objective: str = "throughput"
+    direction: str = "maximize"
 
     def to_dict(self):
         return asdict(self)

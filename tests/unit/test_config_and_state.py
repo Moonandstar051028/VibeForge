@@ -7,11 +7,14 @@ from vibeforge.storage.atomic import write_json
 from vibeforge.storage.database import Database
 
 
-def test_protocol_cannot_silently_enable_unsupported_concurrency(project, tmp_path, toy_config):
+def test_protocol_records_concurrency_and_rejects_out_of_range(project, tmp_path, toy_config):
     toy_config["workload"]["concurrency"] = 8
     path = tmp_path / "campaign.json"
     write_json(path, toy_config)
-    with pytest.raises(ValueError, match="single-request"):
+    assert load_config(path, project)["evaluation"]["concurrency"] == 8
+    toy_config["workload"]["concurrency"] = 65
+    write_json(path, toy_config)
+    with pytest.raises(ValueError, match="concurrency"):
         load_config(path, project)
 
 

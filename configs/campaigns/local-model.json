@@ -1,0 +1,13 @@
+{
+  "name": "local-model", "data_root": "var",
+  "model": {"name": "local-autoregressive-model", "path": "weights/your-model", "max_context": 4096, "reserve_gib": 2},
+  "hardware": "configs/hardware/cpu.json",
+  "precision": "configs/precision/fp32.json",
+  "engine": "configs/engines/transformers.json",
+  "requirements": "configs/requirements/throughput.json",
+  "optimization": "configs/optimization/fixed.json",
+  "workload": "configs/workloads/smoke.json", "evaluation": "configs/evaluation/local.json",
+  "agent": "configs/agent/local.json", "runtime_python": "python3",
+  "startup_timeout": 300, "request_timeout": 180,
+  "budget": {"max_iterations": 2, "max_seconds": 3600, "agent_seconds": 240, "max_failures": 3}
+}

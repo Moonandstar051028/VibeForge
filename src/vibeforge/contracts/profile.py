@@ -1,6 +1,6 @@
 """Stable profile identities, separate from transient measurements."""
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from vibeforge.storage.atomic import digest
 
 
@@ -10,6 +10,7 @@ class Profile:
     hardware: dict
     environment: dict
     workload: dict
+    execution: dict = field(default_factory=dict)
 
     def to_dict(self):
         result = asdict(self)
