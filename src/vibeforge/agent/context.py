@@ -16,6 +16,7 @@ def create_context(database, paths, campaign_id, config, workspace, iteration):
         "history": [{"iteration": row["iteration"], "candidate": row.get("candidate"),
                      "decision": row.get("decision"), "error": row.get("error")} for row in history],
         "budget": config["budget"], "agent": config["agent"],
+        "model": {"name": config["model"].get("name", "vibeforge-local")},
         "source": (workspace / "engine.py").read_text()[:28000],
         "instructions": "Explain previous results, propose one falsifiable hypothesis, edit only the workspace, then submit.",
         "model_features": profile["model"].get("text_config", profile["model"]),

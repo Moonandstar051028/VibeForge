@@ -119,9 +119,12 @@ class Supervisor:
         environment = dict(os.environ)
         environment["PYTHONPATH"] = str(self.paths.project / "src") + os.pathsep + environment.get("PYTHONPATH", "")
         environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment["QWEN_AGENT_MAX_LLM_CALL_PER_RUN"] = str(self.config["agent"].get("max_turns", 6))
         self.events.emit("agent_started", iteration_id=iteration, payload={"analysis_only": analysis_only})
         record = run_command(command, workspace, folder / "logs" / "agent.log",
-                             timeout=self.config["budget"]["agent_seconds"], env=environment,
+                             timeout=min(self.config["budget"]["agent_seconds"],
+                                         self.config["agent"].get("timeout_seconds", self.config["budget"]["agent_seconds"])),
+                             env=environment,
                              trace=folder / "commands.jsonl",
                              process_record=self.paths.data / "state" / f"{self.campaign_id}.agent.json", token=token,
                              heartbeat=lambda: self.events.emit("agent_heartbeat", iteration_id=iteration))
@@ -166,7 +169,7 @@ class Supervisor:
         build(workspace)
         release = freeze(workspace, self.paths, None, self.config["runtime_python"], self.config["config_hash"])
         client = self.start_engine(release["version_id"], self.directory / "bootstrap" / "engine.log")
-        smoke = smoke_agent(client)
+        smoke = smoke_agent(client, trace=self.directory / "bootstrap" / "agent-smoke.jsonl")
         write_json(self.directory / "bootstrap" / "agent-smoke.json", smoke)
         cases = read_json(self.directory / "configs" / "cases.json")
         reference = capture_reference(client, cases, self.directory / "reference.json",
@@ -192,7 +195,7 @@ class Supervisor:
             os._exit(86)
         try:
             client = self.start_engine(version, folder / "logs" / "activation.log")
-            write_json(folder / "activation-smoke.json", smoke_agent(client))
+            write_json(folder / "activation-smoke.json", smoke_agent(client, trace=folder / "activation-smoke.jsonl"))
             self.state("COMMITTING")
             commit_promotion(self.database, self.campaign_id, operation)
             self.events.sync()
@@ -208,7 +211,7 @@ class Supervisor:
             self.database.update(self.campaign_id, {"state": "HALTED"}, "recovery_failed")
             raise RuntimeError("No committed stable release is available")
         client = self.start_engine(target, folder / "logs" / "restore.log")
-        smoke_agent(client)
+        smoke_agent(client, trace=folder / "restore-smoke.jsonl")
         rollback_completed(self.database, self.campaign_id, target)
         self.events.sync()
         return client

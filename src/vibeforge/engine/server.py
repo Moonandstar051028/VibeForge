@@ -4,7 +4,9 @@ import argparse
 import json
 import os
 import threading
+import time
 import traceback
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from vibeforge.engine.backend import load_backend
 from vibeforge.engine.sandbox import restrict_writes, prepare_device
@@ -44,6 +46,11 @@ def serve(directory, port, token):
                 if not 0 < length <= 4 * 1024 * 1024:
                     raise ValueError("Invalid request size")
                 request = json.loads(self.rfile.read(length))
+                if self.path == "/v1/chat/completions":
+                    with lock:
+                        result = backend.chat_completion(**request)
+                    self.chat_completion_reply(request, result)
+                    return
                 operation = self.path.lstrip("/")
                 if operation not in ("generate", "chat", "logits"):
                     self.reply(404, {"error": "not_found"})
@@ -53,7 +60,71 @@ def serve(directory, port, token):
                 self.reply(200, result)
             except Exception as error:
                 traceback.print_exc()
-                self.reply(400, {"error": type(error).__name__, "message": str(error)})
+                value = {"error": {"type": type(error).__name__, "message": str(error)}} \
+                    if self.path == "/v1/chat/completions" else {
+                        "error": type(error).__name__, "message": str(error)
+                    }
+                self.reply(400, value)
+
+        def chat_completion_reply(self, request, result):
+            completion_id = "chatcmpl-" + uuid.uuid4().hex
+            created = int(time.time())
+            calls = result.get("tool_calls") or []
+            message = {"role": "assistant", "content": result.get("text") or None}
+            if calls:
+                message["tool_calls"] = [
+                    {
+                        "id": call.get("id") or f"call_{index}_{uuid.uuid4().hex[:8]}",
+                        "type": "function",
+                        "function": {
+                            "name": call["name"],
+                            "arguments": call["arguments"] if isinstance(call["arguments"], str)
+                            else json.dumps(call["arguments"], ensure_ascii=False),
+                        },
+                    }
+                    for index, call in enumerate(calls)
+                ]
+            response = {
+                "id": completion_id,
+                "object": "chat.completion",
+                "created": created,
+                "model": request.get("model", config.get("model_name", "vibeforge-local")),
+                "choices": [{"index": 0, "message": message,
+                             "finish_reason": "tool_calls" if calls else "stop"}],
+                "usage": result.get("usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}),
+            }
+            if not request.get("stream", False):
+                self.reply(200, response)
+                return
+
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "close")
+            self.end_headers()
+
+            def event(chunk):
+                data = json.dumps(chunk, ensure_ascii=False, allow_nan=False).encode()
+                self.wfile.write(b"data: " + data + b"\n\n")
+                self.wfile.flush()
+
+            delta = {}
+            if message["content"] is not None:
+                delta["content"] = message["content"]
+            if calls:
+                delta["tool_calls"] = [
+                    {"index": index, **call}
+                    for index, call in enumerate(message["tool_calls"])
+                ]
+            if delta:
+                event({"id": completion_id, "object": "chat.completion.chunk", "created": created,
+                       "model": response["model"], "choices": [{"index": 0, "delta": delta,
+                                                                    "finish_reason": None}]})
+            event({"id": completion_id, "object": "chat.completion.chunk", "created": created,
+                   "model": response["model"], "choices": [{"index": 0, "delta": {},
+                                                                "finish_reason": response["choices"][0]["finish_reason"]}]})
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
 
         def log_message(self, format, *args):
             print(format % args, flush=True)

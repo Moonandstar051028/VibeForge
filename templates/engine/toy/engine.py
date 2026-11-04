@@ -38,3 +38,22 @@ def generate(prompt, max_new_tokens=16, fixed_length=False):
 def chat(messages, max_new_tokens=128):
     text = json.dumps({"tool": "submit_candidate", "hypothesis": "toy protocol ready"})
     return {"text": text, "token_ids": list(range(min(len(text), max_new_tokens))), "fixture": True}
+
+
+def chat_completion(messages, tools=None, max_tokens=None, **kwargs):
+    functions = [tool.get("function", tool) for tool in (tools or [])]
+    if any(function.get("name") == "submit_candidate" for function in functions):
+        return {
+            "text": "",
+            "tool_calls": [{
+                "name": "submit_candidate",
+                "arguments": json.dumps({
+                    "hypothesis": "Toy backend verified the Qwen-Agent tool-call transport.",
+                    "previous_analysis": "The deterministic fixture confirms the local function-call path; it does not evaluate Qwen reasoning.",
+                    "summary": "Transport smoke test only.",
+                }),
+            }],
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        }
+    return {"text": "toy completion ready", "tool_calls": [],
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}

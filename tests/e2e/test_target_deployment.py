@@ -23,7 +23,7 @@ def test_real_qwen_deployment_and_agent(paths, project):
         assert read_json(controller.directory / 'bootstrap/agent-smoke.json')['passed']
         agent_results = [read_json(path) for path in
                          (controller.directory / 'iterations').glob('*/agent-result.json')]
-        assert any(result.get('mode') == 'local' and result.get('complete') for result in agent_results), (
+        assert any(result.get('mode') == 'qwen_agent' and result.get('complete') for result in agent_results), (
             'The real model must complete at least one tool session, not only start its HTTP server')
     finally:
         controller.close()

@@ -1,5 +1,5 @@
 {
-  "mode": "local", "max_turns": 6, "max_new_tokens": 512,
+  "mode": "local", "framework": "qwen-agent", "max_turns": 6, "max_new_tokens": 512,
   "timeout_seconds": 180, "request_timeout": 180,
   "prompt": "templates/prompts/implementation.md"
 }

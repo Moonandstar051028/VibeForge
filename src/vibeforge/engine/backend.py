@@ -12,7 +12,7 @@ def load_backend(directory):
         raise ValueError("Candidate must provide engine.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    for name in ("load", "generate", "chat", "logits"):
+    for name in ("load", "generate", "chat", "chat_completion", "logits"):
         if not callable(getattr(module, name, None)):
             raise ValueError(f"Missing backend callable: {name}")
     config = read_json(directory / "engine.json")

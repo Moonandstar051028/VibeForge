@@ -47,7 +47,7 @@ def main(argv=None):
         return 0
     if args.command == "agent-worker":
         worker(args.context, args.workspace, args.trace, args.result, args.url,
-               args.prompt, args.analysis_only)
+               args.prompt, args.token, args.analysis_only)
         return 0
     config = None
     campaign_id = args.campaign

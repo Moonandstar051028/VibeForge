@@ -1,6 +1,9 @@
 """Text-only trusted bootstrap backend for local Qwen safetensors."""
 
 import time
+import json
+import re
+import copy
 
 CONFIG = {}
 MODEL = TOKENIZER = TORCH = None
@@ -29,7 +32,7 @@ def synchronize():
         TORCH.cuda.synchronize()
 
 
-def generate(prompt, max_new_tokens=16, fixed_length=False):
+def generate(prompt, max_new_tokens=16, fixed_length=False, skip_special_tokens=True):
     if not 1 <= max_new_tokens <= CONFIG.get("max_new_tokens", 1024):
         raise ValueError("Output length exceeds configured limit")
     started = time.perf_counter()
@@ -62,7 +65,7 @@ def generate(prompt, max_new_tokens=16, fixed_length=False):
     synchronize()
     tokens = result[0, inputs.input_ids.shape[-1]:].tolist()
     return {
-        "text": TOKENIZER.decode(tokens, skip_special_tokens=True),
+        "text": TOKENIZER.decode(tokens, skip_special_tokens=skip_special_tokens),
         "input_ids": inputs.input_ids[0].tolist(), "token_ids": tokens,
         "elapsed_seconds": time.perf_counter() - started,
         "ttft_seconds": timestamps[0] - started if timestamps else None,
@@ -73,6 +76,78 @@ def generate(prompt, max_new_tokens=16, fixed_length=False):
 def chat(messages, max_new_tokens=512):
     prompt = TOKENIZER.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
     return generate(prompt, max_new_tokens)
+
+
+def parse_tool_calls(text, tools=None):
+    schemas = {
+        tool["function"]["name"]: tool["function"].get("parameters", {}).get("properties", {})
+        for tool in (tools or [])
+    }
+    calls = []
+    for block in re.findall(r"<tool_call>\s*(.*?)\s*</tool_call>", text, flags=re.DOTALL):
+        function = re.search(r"<function=([^>\n]+)>(.*?)</function>", block, flags=re.DOTALL)
+        if not function:
+            try:
+                value = json.loads(block)
+                calls.append({"name": value["name"], "arguments": value.get("arguments", {})})
+            except (ValueError, KeyError, TypeError):
+                continue
+            continue
+        arguments = {}
+        function_name = function.group(1).strip()
+        for name, raw_value in re.findall(
+                r"<parameter=([^>\n]+)>(.*?)</parameter>", function.group(2), flags=re.DOTALL):
+            name = name.strip()
+            # The native template wraps each value with one newline. Preserve
+            # meaningful indentation, blank lines, and numeric-looking strings.
+            value = raw_value.removeprefix("\n").removesuffix("\n")
+            schema = schemas.get(function_name, {}).get(name, {})
+            if schema.get("type", "string") != "string":
+                value = json.loads(value)
+            arguments[name] = value
+        calls.append({"name": function.group(1).strip(), "arguments": arguments})
+    return calls
+
+
+def chat_completion(messages, tools=None, max_tokens=None, **kwargs):
+    messages = copy.deepcopy(messages)
+    for message in messages:
+        for call in message.get("tool_calls", []):
+            arguments = call["function"].get("arguments", {})
+            if isinstance(arguments, str):
+                arguments = json.loads(arguments)
+            if not isinstance(arguments, dict):
+                raise ValueError("Tool arguments must be JSON objects")
+            call["function"]["arguments"] = arguments
+    prompt = TOKENIZER.apply_chat_template(
+        messages,
+        tools=tools,
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=False,
+    )
+    generated = generate(
+        prompt,
+        max_new_tokens=max_tokens or kwargs.get("max_completion_tokens") or CONFIG.get("max_new_tokens", 512),
+        skip_special_tokens=False,
+    )
+    text = re.sub(r"<think>.*?</think>", "", generated["text"], flags=re.DOTALL).strip()
+    text = text.removesuffix("<|im_end|>").removesuffix("<|endoftext|>").strip()
+    calls = parse_tool_calls(text, tools)
+    if "<tool_call>" in text and not calls:
+        raise ValueError("Malformed or truncated Qwen tool call")
+    if calls:
+        text = text.split("<tool_call>", 1)[0].strip()
+    return {
+        "text": text,
+        "tool_calls": [{"name": call["name"],
+                        "arguments": json.dumps(call["arguments"], ensure_ascii=False)} for call in calls],
+        "usage": {
+            "prompt_tokens": len(generated["input_ids"]),
+            "completion_tokens": len(generated["token_ids"]),
+            "total_tokens": len(generated["input_ids"]) + len(generated["token_ids"]),
+        },
+    }
 
 
 def logits(input_ids, indices=None):

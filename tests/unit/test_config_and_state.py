@@ -28,6 +28,19 @@ def test_relative_model_path_resolves_from_project(project):
     assert config["model"]["path"] == str((project / "weights/Qwen3.6-35B-A3B").resolve())
 
 
+def test_local_agent_requires_qwen_agent_and_bounded_call_budget(project, tmp_path, toy_config):
+    toy_config["agent"].update(mode="local", framework="custom", max_turns=6)
+    path = tmp_path / "campaign.json"
+    write_json(path, toy_config)
+    with pytest.raises(ValueError, match="agent.framework"):
+        load_config(path, project)
+
+    toy_config["agent"].update(framework="qwen-agent", max_turns=21)
+    write_json(path, toy_config)
+    with pytest.raises(ValueError, match="agent.max_turns"):
+        load_config(path, project)
+
+
 def test_invalid_state_jump_preserves_state(tmp_path):
     database = Database(tmp_path / "state.sqlite3")
     database.put("c", {"state": "READY"})

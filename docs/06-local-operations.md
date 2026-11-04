@@ -42,7 +42,7 @@ bash scripts/dev/bootstrap.sh
 | --- | --- |
 | `configs/campaigns/qwen36-35b.json` | 推理解释器、额外依赖目录、启动超时、活动预算 |
 | `configs/models/qwen36-35b.json` | `weights/Qwen3.6-35B-A3B`（默认相对路径，可由环境变量覆盖）、BF16、CUDA、8192 上下文 |
-| `configs/agent/local.json` | 本地聊天模式、最多 6 次模型交互、每次最多 512 新 token |
+| `configs/agent/local.json` | Qwen-Agent `Assistant`、本地 OpenAI 兼容接口、最多 6 次模型调用、每次最多 512 新 token |
 | `configs/workloads/smoke.json` | 固定提示词、16 个输出 token、文本正确性用例 |
 | `configs/evaluation/local.json` | 5 组重复、交替顺序、2% 最低收益、95% 区间、GPU 独占要求 |
 

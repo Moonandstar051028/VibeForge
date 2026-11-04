@@ -7,12 +7,13 @@
 | 验收项 | 结果 |
 | --- | --- |
 | 项目核心模块 | 已实现可运行首版，无仅抛出 NotImplemented 的业务占位 |
-| 工程测试 | 43 项通过，真实目标测试独立执行 |
-| CPU 完整闭环 | 通过：两轮修改，第一轮接受，第二轮正确性失败后恢复稳定版本 |
+| 工程测试 | 47 项通过，含 Qwen-Agent 模拟服务工具调用及控制器 worker 集成测试 |
+| CPU 完整闭环 | 通过：`qwen-agent-toy-20261104` 两轮完成，第一轮接受，第二轮正确性拒绝并保持第一轮版本 |
 | 故障恢复 | 测试通过：提升意图写入后控制程序退出，新进程恢复保留已提交版本 |
-| Thor 推理环境 | CUDA 实算、分词器、聊天模板、Qwen meta 结构及写入限制下运行通过 |
-| Qwen BF16 完整部署 | 未通过：内存预检阻塞，完整权重未加载 |
-| 真实 Qwen Agent 与自优化 | 尚未验证，受完整部署阻塞 |
+| Qwen-Agent 框架 | 通过：真实 `Assistant` 对接模拟 OpenAI SSE 服务，完成候选编辑、语法检查和提交 |
+| Toy 引擎框架冒烟 | 通过：Qwen-Agent `Assistant` 经引擎 `/v1/chat/completions` 完成工具调用 |
+| Qwen BF16 完整部署 | 未通过：配置现有推理环境后仍因内存不足阻塞，完整权重未加载 |
+| 真实 Qwen Agent 与自优化 | 尚未验证；框架接入通过，真实 Qwen 权重推理受上述条件阻塞 |
 | 可迁移优化范式 | 已有草案与证据管理机制，尚无经真实多配置实验验证的通用规则 |
 
 工程通过与目标模型部署未通过分别保留结果，不合并为“系统全部通过”。
@@ -23,8 +24,8 @@
 | --- | --- | --- |
 | CLI | 画像、启动、恢复、状态、停止、事件、报告、子进程入口 | `cli/main.py`、`campaign.py`、`status.py` |
 | 控制 | 自举、有限迭代、固定预算、状态机、统计准入、恢复编排 | `controller/supervisor.py`、`state_machine.py`、`budgets.py`、`admission.py`、`recovery.py` |
-| Agent | 本地聊天 JSON 工具循环、独立会话、历史上下文、只读证据、候选编辑、结果分析 | `agent/runner.py`、`tools.py`、`context.py`、`analysis.py` |
-| 引擎 | Python 后端构建检查、HTTP 服务、健康检查、进程所有权、写入限制 | `engine/backend.py`、`builder.py`、`server.py`、`client.py`、`process.py`、`sandbox.py` |
+| Agent | Qwen-Agent `Assistant` 本地模型配置、工具适配、独立会话、恢复上下文、候选编辑与结果分析 | `agent/runner.py`、`tools.py`、`context.py`、`analysis.py` |
+| 引擎 | Python 后端构建检查、HTTP 服务、OpenAI SSE 兼容接口、健康检查、进程所有权、写入限制 | `engine/backend.py`、`builder.py`、`server.py`、`client.py`、`process.py`、`sandbox.py` |
 | 画像 | 分片头部与索引检查、模型结构、设备/依赖探测、内存预检、资源采样 | `profiling/model.py`、`hardware.py`、`environment.py`、`collector.py`、`sampler.py` |
 | 评测 | 冻结参考、确定性 token、抽样 logits、请求隔离、实际吞吐、配对 bootstrap | `evaluation/reference.py`、`correctness.py`、`performance.py`、`statistics.py` |
 | 版本 | 隔离工作区、差异、内容哈希、冻结、持久化提升意图、提交和回退 | `versioning/` 全部业务模块 |
@@ -54,26 +55,26 @@
 | 存储 | 事务回滚、锁互斥、原子 JSON、路径穿越与符号链接限制 |
 | 发布事务 | 幂等提交、意图取消、制品哈希损坏、提交前崩溃恢复 |
 | 日志 | outbox 事件导出、重复导出与 JSONL 断尾恢复 |
-| Agent | 模型动作编辑与提交、缺少上一轮分析时要求补充、会话不复用 |
+| Agent | Qwen-Agent 框架实际解析并调用工具、候选编辑与提交；控制器启动独立 worker 和最终分析会话；工具越界审计；原生 Qwen 工具格式转换 |
 | 写入限制 | 生成进程可写缓存，不能改控制状态；允许库访问 `/dev/null` |
 | 画像与知识 | 分片缺失/头部越界检查、资源阻塞、配置校验、知识适用边界 |
 
-43 项工程测试的 JUnit 和真实部署验收报告保存在本机 `var/campaigns/system-validation/`，属于忽略的运行产物，不纳入 Git。目标验收有 1 项失败，原因为 `BLOCKED: insufficient_memory`。
+工程测试命令 `.venv/bin/python -m pytest -m 'not target' -q` 结果为 `47 passed, 1 deselected`。JUnit 位于本机 `var/validation-qwen-agent-final/tests.xml`。真实目标命令启用 `VIBEFORGE_TARGET_TEST=1` 并配置现有推理环境后，目标测试有 1 项失败，原因为 `BLOCKED: insufficient_memory`；未进入引擎启动或完整模型加载，不按通过或跳过处理。
 
 另已检查 79 个 Python 文件语法、20 个静态 JSON 文件、全部 shell 脚本语法、静态子目录说明和新增文档链接。活动退出后没有残留的引擎或 Agent 进程记录。
 
 ## 4. CPU 活动实测
 
-活动：`system-validation-toy-final`，状态 `STOPPED`，完成 2 轮，`analysis_pending=false`，退出后 `active_ref=null`。
+活动：`qwen-agent-toy-20261104`，状态 `STOPPED`，完成 2 轮，`analysis_pending=false`，退出后 `active_ref=null`。控制器中的候选优化决策使用专门的 `scripted` 测试夹具；自举、候选激活和恢复检查中的 Assistant 冒烟通过 Qwen-Agent 完成。
 
 | 轮次 | 修改 | 结果 |
 | --- | --- | --- |
 | 1 | 把每个输出 token 的重复求和换成等价闭式算式 | 正确性通过；按实际计时接受候选 |
 | 2 | 故意改变输出数值 | 正确性拒绝；稳定指针保持第一轮版本 |
 
-该次第一轮相对吞吐收益 `gain=35.0648`，即约 +3506%；95% bootstrap 区间 `[31.4043, 39.9554]`。这是刻意设置冗余 CPU 运算的测试引擎，不能解释为 Qwen 加速。
+该次第一轮相对吞吐收益约 `gain=37.33`；95% bootstrap 区间约 `[34.55, 39.25]`。这是刻意设置冗余 CPU 运算的测试引擎，不能解释为 Qwen 加速。
 
-活动摘要、各轮判定和完整事件流保存在本机 `var/campaigns/system-validation-toy-final/`，不会作为机器特定运行产物提交。
+活动摘要、各轮判定和完整事件流保存在本机 `var/validation-qwen-agent/campaigns/qwen-agent-toy-20261104/`。同样的两轮流程在最终活动 `var/validation-qwen-agent-final/campaigns/qwen-agent-final-20261104/` 再次通过。运行产物不提交到版本库。
 
 ## 5. Qwen 本机部署结果
 
@@ -82,42 +83,42 @@
 | 项目 | 采集结果 |
 | --- | --- |
 | 平台 | aarch64，NVIDIA Thor，统一内存，Linux 6.8.12-1021-tegra |
-| 驱动 / Torch | 595.78 / `2.13.0+cu132` |
-| Transformers / Accelerate | `5.19.0` / `1.15.0` |
-| 模型路径 | 本机路径由 `VIBEFORGE_MODEL_PATH` 提供，不进入版本库 |
-| 模型类 | `Qwen3_5MoeForConditionalGeneration` |
+| 驱动 / 设备 | NVIDIA Thor，统一内存；驱动探测为 595.78 |
+| 模型路径 | `/home/yxy/weights/Qwen3.6-35B-A3B`，通过 `VIBEFORGE_MODEL_PATH` 传入，不进入版本库 |
+| 模型类 | 权重元数据声明 `Qwen3_5MoeForConditionalGeneration`；本次没有加载模型权重 |
 | 模型结构 | 40 层混合注意力，256 专家、每 token 选择 8 个专家 |
 | 分片 | 26 个 safetensors 分片，索引和头部检查通过 |
 | 权重字节 | 71,903,645,408，约 66.96 GiB |
 | BF16 需求估算 | 84,098,387,984 字节，约 78.32 GiB |
-| 活动预检可用内存 | 40,259,145,728 字节，约 37.49 GiB |
+| 本次活动预检可用内存 | 39,984,177,152 字节，约 37.24 GiB |
 
 本次没有重新计算全部约 67 GiB 权重的内容校验和；画像记录配置、tokenizer 等文件哈希及分片清单/大小/头部检查范围。此前下载校验材料不作为本次完整校验的替代。
 
-### 5.2 已通过的轻量探针
+### 5.2 预检与框架探针
 
-- CUDA 上执行 8 个元素求和，结果 `8.0`。
-- 本地聊天模板与分词器可用，样例得到 19 个 token。
-- 在 meta 设备构造真实模型类，统计参数 `35,107,181,936`；不分配完整权重。
-- 使用与引擎相同的 Landlock 写入限制后，上述检查仍通过。Thor 的 CUDA 驱动由受维护启动代码先初始化，再限制生成代码写入。
+- 本机默认 `runtime_python=python3` 缺少推理依赖；通过 `VIBEFORGE_RUNTIME_PYTHON` 指向现有推理环境后，预检的 `missing_packages=[]`。
+- 本次真实活动可用内存约 37.24 GiB，BF16 估算约 78.32 GiB；预检因此在引擎子进程启动前停止。
+- 使用现有推理环境、真实本地 tokenizer 和 `chat_template.jinja` 验证多轮工具历史：OpenAI 参数字符串转对象、原生工具渲染、代码缩进与末尾换行保留均通过；生成响应由测试数据代替，没有加载权重。
+- Qwen-Agent 框架本身通过 `.venv` 中的本地模拟 SSE 服务和 Toy 后端完成集成测试；这不等同于真实模型推理。
+- 独立于系统包的全新虚拟环境安装项目后，Qwen-Agent `Assistant` 与项目模块导入通过。
 
-常规探针和受写入限制的探针 JSON 保存在本机 `var/`，均标记 `model_weights_loaded=false`，不会提交硬件运行产物。
+权重和预检运行数据留在本机忽略目录，不提交到版本库。
 
 ### 5.3 部署阻塞
 
-活动 `qwen36-bf16-final` 的结果：
+活动 `qwen-agent-bf16-20261104` 的结果：
 
 ```text
 state = BLOCKED
-stop_reason = insufficient_memory
+reasons = insufficient_memory
 completed_iterations = 0
 stable_ref = null
 missing_packages = []
 ```
 
-完整部署预检和活动摘要保存在本机 `var/campaigns/qwen36-bf16-final/`。预检未通过后未终止其他工作负载、未修改权重、未自动改变精度。
+活动预检及画像位于本机 `var/validation-qwen-agent-final/`；真实目标测试也记录了同样的内存阻塞。预检未通过后未终止其他工作负载、未修改权重、未自动改变精度。
 
-下一步是提供足够空闲内存与满足评测约束的设备时段，再执行 `resume qwen36-bf16-final`。若选择量化，应使用单独活动，重新建立正确性参考并实测该后端兼容性。
+下一步是提供足够空闲内存与满足评测约束的设备时段，使用已配置的推理环境重新运行真实目标测试。若选择量化，应使用单独活动，重新建立正确性参考并实测该后端兼容性。
 
 ## 6. 当前实现边界
 

@@ -50,7 +50,17 @@ def load_config(path, project):
     if config["workload"].get("concurrency", 1) != 1:
         raise ValueError("This implementation measures single-request workloads; concurrency must be 1")
     if config["agent"].get("mode", "local") not in ("local", "scripted"):
-        raise ValueError("agent.mode must be local or scripted")
+        raise ValueError("agent.mode must be local (Qwen-Agent) or scripted (test fixture)")
+    if config["agent"].get("mode", "local") == "local":
+        config["agent"].setdefault("framework", "qwen-agent")
+        if config["agent"]["framework"] != "qwen-agent":
+            raise ValueError("agent.framework must be qwen-agent")
+        config["agent"].setdefault("max_turns", 6)
+        if not isinstance(config["agent"]["max_turns"], int) or not 1 <= config["agent"]["max_turns"] <= 20:
+            raise ValueError("agent.max_turns must be an integer from 1 to 20")
+        config["agent"].setdefault("max_new_tokens", 512)
+        if not isinstance(config["agent"]["max_new_tokens"], int) or config["agent"]["max_new_tokens"] <= 0:
+            raise ValueError("agent.max_new_tokens must be a positive integer")
     config["runtime_python"] = os.environ.get(
         "VIBEFORGE_RUNTIME_PYTHON", config.get("runtime_python", "python3"))
     config["inference_pythonpath"] = [str((project / path).resolve()) for path in config.get("inference_pythonpath", [])]
