@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["rule_id", "conditions", "evidence", "failure"],
+  "properties": {
+    "rule_id": {"type": "string"}, "conditions": {"type": "object"},
+    "evidence": {"type": "array", "minItems": 1}, "failure": {"type": "string"}
+  }
+}

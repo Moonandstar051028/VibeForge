@@ -1,0 +1,33 @@
+# Python environments and generated build files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+
+# Local tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.DS_Store
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
+# Runtime artifacts: retain only the explicitly listed directory guides
+/var/**
+!/var/**/
+!/var/README.md
+!/var/state/README.md
+!/var/profiles/README.md
+!/var/workspaces/README.md
+!/var/releases/README.md
+!/var/campaigns/README.md
+!/var/cache/README.md

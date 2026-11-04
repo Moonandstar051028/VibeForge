@@ -1,0 +1,10 @@
+{
+  "name": "qwen36-35b-thor", "data_root": "var",
+  "model": "configs/models/qwen36-35b.json", "hardware": "configs/hardware/thor.json",
+  "workload": "configs/workloads/smoke.json", "evaluation": "configs/evaluation/local.json",
+  "agent": "configs/agent/local.json", "engine_template": "templates/engine/transformers",
+  "runtime_python": "python3",
+  "inference_pythonpath": ["var/cache/inference-packages"],
+  "startup_timeout": 600, "request_timeout": 180,
+  "budget": {"max_iterations": 2, "max_seconds": 3600, "agent_seconds": 240, "max_failures": 3}
+}

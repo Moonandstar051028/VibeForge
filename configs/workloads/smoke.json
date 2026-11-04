@@ -1,0 +1,6 @@
+{
+  "prompts": ["The capital of France is", "2 + 2 ="],
+  "max_new_tokens": 16,
+  "concurrency": 1,
+  "cases": "benchmarks/cases/text-smoke.json"
+}

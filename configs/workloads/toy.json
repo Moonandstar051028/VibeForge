@@ -1,0 +1,6 @@
+{
+  "prompts": ["alpha beta", "cache boundary"],
+  "max_new_tokens": 32,
+  "concurrency": 1,
+  "cases": "benchmarks/cases/toy.json"
+}

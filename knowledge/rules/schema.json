@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["rule_id", "status", "conditions", "implementation", "validation", "evidence"],
+  "properties": {
+    "rule_id": {"type": "string"},
+    "status": {"enum": ["draft", "local_validated", "cross_config_validated", "invalidated"]},
+    "conditions": {"type": "object"},
+    "evidence": {"type": "array", "minItems": 1}
+  }
+}

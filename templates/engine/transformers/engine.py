@@ -1,0 +1,85 @@
+"""Text-only trusted bootstrap backend for local Qwen safetensors."""
+
+import time
+
+CONFIG = {}
+MODEL = TOKENIZER = TORCH = None
+
+
+def load(config):
+    global CONFIG, MODEL, TOKENIZER, TORCH
+    import torch
+    from transformers import AutoModelForImageTextToText, AutoTokenizer
+    CONFIG, TORCH = config, torch
+    torch.set_num_threads(config.get("num_threads", 8))
+    dtype = getattr(torch, config.get("dtype", "bfloat16"))
+    arguments = {"local_files_only": True, "trust_remote_code": False,
+                 "dtype": dtype, "device_map": config.get("device", "cuda")}
+    if config.get("quantization") == "bitsandbytes-4bit":
+        from transformers import BitsAndBytesConfig
+        arguments["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=dtype, bnb_4bit_use_double_quant=True)
+    MODEL = AutoModelForImageTextToText.from_pretrained(config["model_path"], **arguments).eval()
+    TOKENIZER = AutoTokenizer.from_pretrained(config["model_path"], local_files_only=True, trust_remote_code=False)
+
+
+def synchronize():
+    if CONFIG.get("device", "cuda").startswith("cuda"):
+        TORCH.cuda.synchronize()
+
+
+def generate(prompt, max_new_tokens=16, fixed_length=False):
+    if not 1 <= max_new_tokens <= CONFIG.get("max_new_tokens", 1024):
+        raise ValueError("Output length exceeds configured limit")
+    started = time.perf_counter()
+    inputs = TOKENIZER(prompt, return_tensors="pt").to(MODEL.device)
+    if inputs.input_ids.shape[-1] + max_new_tokens > CONFIG.get("max_context", 4096):
+        raise ValueError("Request exceeds configured context")
+    synchronize()
+    timestamps = []
+
+    class TokenClock:
+        first = True
+
+        def put(self, value):
+            if self.first:
+                self.first = False
+                return
+            synchronize()
+            timestamps.append(time.perf_counter())
+
+        def end(self):
+            pass
+
+    options = {"max_new_tokens": max_new_tokens, "do_sample": False,
+               "use_cache": CONFIG.get("use_cache", True), "streamer": TokenClock(),
+               "pad_token_id": TOKENIZER.eos_token_id}
+    if fixed_length:
+        options["min_new_tokens"] = max_new_tokens
+    with TORCH.inference_mode():
+        result = MODEL.generate(**inputs, **options)
+    synchronize()
+    tokens = result[0, inputs.input_ids.shape[-1]:].tolist()
+    return {
+        "text": TOKENIZER.decode(tokens, skip_special_tokens=True),
+        "input_ids": inputs.input_ids[0].tolist(), "token_ids": tokens,
+        "elapsed_seconds": time.perf_counter() - started,
+        "ttft_seconds": timestamps[0] - started if timestamps else None,
+        "tpot_seconds": (timestamps[-1] - timestamps[0]) / (len(timestamps) - 1) if len(timestamps) > 1 else None,
+    }
+
+
+def chat(messages, max_new_tokens=512):
+    prompt = TOKENIZER.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+    return generate(prompt, max_new_tokens)
+
+
+def logits(input_ids, indices=None):
+    if not input_ids or len(input_ids) > CONFIG.get("max_context", 4096):
+        raise ValueError("Invalid logit input length")
+    tokens = TORCH.tensor([input_ids], dtype=TORCH.long, device=MODEL.device)
+    with TORCH.inference_mode():
+        values = MODEL(input_ids=tokens, use_cache=False, logits_to_keep=1).logits[0, -1].float()
+    indices = list(range(min(32, values.shape[-1]))) if indices is None else indices
+    return {"indices": indices, "values": values[indices].cpu().tolist()}

@@ -1,0 +1,5 @@
+[
+  {"id": "short", "prompt": "The capital of France is", "max_new_tokens": 4},
+  {"id": "arithmetic", "prompt": "2 + 2 =", "max_new_tokens": 4},
+  {"id": "unicode", "prompt": "请用一个词描述天空：", "max_new_tokens": 4}
+]

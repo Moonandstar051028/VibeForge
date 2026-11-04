@@ -1,0 +1,6 @@
+{
+  "repeats": 5, "warmup": 1, "min_gain": 0.02, "confidence": 0.95,
+  "max_retests": 1, "atol": 0.01, "rtol": 0.01,
+  "exact_tokens": true, "require_exclusive_gpu": true,
+  "max_temperature_c": 80
+}

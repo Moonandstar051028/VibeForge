@@ -1,0 +1,6 @@
+{
+  "policy": "Capture from the frozen bootstrap backend before candidate edits.",
+  "identity": ["source_hash", "profile_hash", "runtime_environment"],
+  "checks": ["reference_hash", "deterministic_tokens", "sampled_logits"],
+  "coverage_note": "Smoke differential testing does not establish complete model or task-quality correctness."
+}

@@ -1,0 +1,5 @@
+[
+  {"id": "ascii", "prompt": "fixture correctness", "max_new_tokens": 4},
+  {"id": "unicode", "prompt": "缓存边界", "max_new_tokens": 4},
+  {"id": "empty", "prompt": "", "max_new_tokens": 2}
+]

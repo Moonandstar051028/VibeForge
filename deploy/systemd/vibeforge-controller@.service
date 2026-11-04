@@ -1,0 +1,16 @@
+[Unit]
+Description=VibeForge optimization campaign %i
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/VibeForge
+Environment=PYTHONUNBUFFERED=1
+ExecStart=%h/VibeForge/.venv/bin/python -m vibeforge resume %i
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillMode=control-group
+
+[Install]
+WantedBy=default.target

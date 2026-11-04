@@ -1,0 +1,8 @@
+{
+  "name": "toy-system-validation", "data_root": "var",
+  "model": "configs/models/toy.json", "hardware": "configs/hardware/cpu.json",
+  "workload": "configs/workloads/toy.json", "evaluation": "configs/evaluation/toy.json",
+  "agent": "configs/agent/scripted.json", "engine_template": "templates/engine/toy",
+  "runtime_python": "python3",
+  "budget": {"max_iterations": 2, "max_seconds": 300, "agent_seconds": 30, "max_failures": 3}
+}

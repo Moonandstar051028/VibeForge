@@ -1,0 +1,10 @@
+{
+  "backend": "transformers",
+  "model_path": "",
+  "dtype": "bfloat16",
+  "device": "cuda",
+  "use_cache": true,
+  "max_context": 4096,
+  "max_new_tokens": 1024,
+  "num_threads": 8
+}

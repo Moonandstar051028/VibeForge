@@ -1,0 +1,18 @@
+{
+  "mode": "scripted",
+  "prompt": "templates/prompts/implementation.md",
+  "actions": [
+    {
+      "hypothesis": "Replace repeated sum of a fixed integer range with its exact closed form.",
+      "edits": [{"tool": "replace_text", "arguments": {
+        "path": "engine.py", "old": "work = sum(range(120000))", "new": "work = 119999 * 120000 // 2"
+      }}]
+    },
+    {
+      "hypothesis": "Inject an incorrect logit change to verify rejection and stable-version preservation.",
+      "edits": [{"tool": "replace_text", "arguments": {
+        "path": "engine.py", "old": "seed = sum(", "new": "seed = 1 + sum("
+      }}]
+    }
+  ]
+}
