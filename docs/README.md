@@ -46,7 +46,7 @@ flowchart TD
 | [04：知识库与实施路线](04-knowledge-and-roadmap.md) | 优化经验抽象、规则验证、跨配置迁移、研究实验、分阶段落地 |
 | [05：项目目录与文件放置规范](05-project-layout.md) | 实际工程目录、各文件夹职责、代码与配置入口、运行档案和命名规则 |
 | [06：本地运行与恢复](06-local-operations.md) | 安装、Qwen 配置、活动命令、日志定位、故障恢复和测试 |
-| [07：实现与验收报告](07-implementation-validation.md) | 模块实现清单、41 项测试、CPU 闭环结果、Qwen 部署阻塞证据与限制 |
+| [07：实现与验收报告](07-implementation-validation.md) | 模块实现清单、43 项测试、CPU 闭环结果、Qwen 部署阻塞证据与限制 |
 
 ## 4. 全系统共同约束
 
