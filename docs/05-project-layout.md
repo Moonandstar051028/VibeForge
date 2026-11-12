@@ -84,15 +84,15 @@ VibeForge/
 | --- | --- | --- |
 | `src/vibeforge/cli/` | 参数解析、命令分发、状态展示 | `main.py`、`campaign.py`、`status.py` |
 | `src/vibeforge/controller/` | 独立监督、状态迁移、设备租约、预算、准入和恢复 | `supervisor.py`、`state_machine.py`、`recovery.py`、`admission.py`、`budgets.py` |
-| `src/vibeforge/agent/` | 会话生命周期、工具执行、恢复上下文和分析任务 | `runner.py`、`context.py`、`tools.py`、`analysis.py` |
-| `src/vibeforge/engine/` | 后端声明、接口、构建、进程、健康检查、写入限制和推理调用 | `adapters.py`、`backend.py`、`builder.py`、`process.py`、`client.py`、`server.py`、`sandbox.py` |
+| `src/vibeforge/agent/` | Qwen/Codex 会话、统一能力视图、受控工具、有效候选契约、恢复上下文、分析与分层实验记忆 | `runner.py`、`codex.py`、`interface.py`、`profile_tool.py`、`context.py`、`tools.py`、`candidate.py`、`memory.py`、`analysis.py` |
+| `src/vibeforge/engine/` | 后端声明、接口、构建、进程、真实配置与精度校验、正常请求/Agent 会话观测和有界剖析 | `adapters.py`、`backend.py`、`builder.py`、`process.py`、`client.py`、`server.py`、`runtime.py`、`precision.py`、`telemetry.py`、`session_telemetry.py`、`observation.py`、`sandbox.py` |
 | `src/vibeforge/profiling/` | 模型结构解析、硬件探测、软件环境与运行采样 | `model.py`、`hardware.py`、`environment.py`、`sampler.py`、`resources.py`、`collector.py` |
 | `src/vibeforge/evaluation/` | 数值与功能验证、独立质量门禁、基准测量、汇总统计、参考适配 | `correctness.py`、`quality.py`、`performance.py`、`statistics.py`、`reference.py` |
 | `src/vibeforge/versioning/` | 冻结候选、哈希、发布清单、提升事务、稳定指针与回退 | `candidate.py`、`artifacts.py`、`release.py`、`promotion.py`、`rollback.py` |
 | `src/vibeforge/observability/` | 事件写入、输出采集、指标记录和报告渲染 | `events.py`、`logs.py`、`metrics.py`、`reports.py` |
 | `src/vibeforge/knowledge/` | 经验抽取、规则验证、索引检索、证据关联 | `extractor.py`、`validator.py`、`retriever.py`、`registry.py` |
 | `src/vibeforge/storage/` | 路径解析、数据库访问、原子写入、刷盘与锁 | `paths.py`、`database.py`、`atomic.py`、`locks.py` |
-| `src/vibeforge/contracts/` | 画像、活动、精度、需求、候选、事件、结果与决策的数据契约 | `profile.py`、`campaign.py`、`precision.py`、`requirements.py`、`candidate.py`、`evaluation.py`、`event.py` |
+| `src/vibeforge/contracts/` | 画像、活动、统一循环、负载矩阵、精度、需求、候选、事件、结果与决策的数据契约 | `profile.py`、`campaign.py`、`loop.py`、`workload.py`、`precision.py`、`requirements.py`、`candidate.py`、`evaluation.py`、`event.py` |
 
 ### 3.1 容易混淆的边界
 
@@ -168,9 +168,11 @@ VibeForge/
 | `var/state/` | 权威状态数据库、锁、设备租约、检查点、事务记录 | 持久化，恢复入口 |
 | `var/profiles/` | 采集后的模型、设备、环境与组合画像 | 持久化，按哈希引用 |
 | `var/workspaces/<campaign_id>/<iteration_id>/` | 可修改候选源码、配置和临时构建输出 | 可写；冻结后保留可追溯快照或差异 |
-| `var/releases/<version_id>/` | 不可变发布清单、源码、依赖、运行配置与构建产物 | 持久化，支持回退 |
+| `var/releases/<version_id>/` | 内容哈希保护的发布清单、源码、运行配置与工作区内生成的运行产物 | 持久化，支持回退 |
 | `var/campaigns/<campaign_id>/` | 活动配置快照、事件、命令、测量、决策和分析 | 持久化，完整实验档案 |
 | `var/cache/` | 下载与编译缓存、参考数据缓存、知识检索索引 | 可重建，不能保存唯一证据 |
+
+当前发布清单记录文件哈希、父版本、运行解释器路径、活动配置哈希和证据引用；推理环境包版本保存在画像中。系统会在启动发布前重新校验文件内容，但不会把 Python/CUDA 依赖环境复制或锁定到发布目录，也不会生成不可变容器镜像。因此恢复依赖原解释器和外部环境仍然可用且画像未漂移。
 
 ### 6.1 单个活动的动态目录
 
@@ -190,9 +192,12 @@ var/campaigns/<campaign_id>/
     ├── change.patch              # 相对父稳定版本的代码差异
     ├── commands.jsonl            # 命令、工具调用、参数、退出码和时长
     ├── logs/                     # 构建、引擎和 Agent 原始输出
+    ├── observation.json          # 稳定版真实配置、正常推理观测和诊断
+    ├── candidate-observation.json # 正确候选的同条件诊断（按阶段生成）
     ├── correctness/              # 误差报告、失败用例和最小复现
     ├── benchmarks/               # 原始测量、设备采样、统计与收益
     ├── decision.json             # 接受、拒绝、复测的原因与证据
+    ├── verification.json         # 瓶颈变化与正式配对预测验证（按阶段生成）
     └── analysis.md               # 事实、原因解释、反例与下一步
 ```
 

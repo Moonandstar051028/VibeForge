@@ -1,0 +1,41 @@
+{
+  "kind": "component_microbenchmark",
+  "model_family": "qwen3_5",
+  "hardware": "NVIDIA A100-PCIE-40GB",
+  "dtype": "bfloat16 inputs; float32 recurrent state",
+  "shape": "batch x 1 x 48 x 128; state batch x 48 x 128 x 128",
+  "transformers": "5.20.2",
+  "seed": 123,
+  "iterations": 200,
+  "records": [
+    {
+      "batch": 1,
+      "max_abs_errors": [
+        0.0,
+        4.76837158203125e-07
+      ],
+      "seconds": [
+        0.00022978513967245818,
+        8.498370181769132e-05
+      ],
+      "speedup": 2.7038730339777115
+    },
+    {
+      "batch": 2,
+      "max_abs_errors": [
+        0.0,
+        4.76837158203125e-07
+      ],
+      "seconds": [
+        0.00024413161911070346,
+        8.756598923355341e-05
+      ],
+      "speedup": 2.787973061773594
+    }
+  ],
+  "limitations": [
+    "Random component inputs, not a model quality benchmark",
+    "No end-to-end performance claim",
+    "Default compiler; no CUDA graphs; state/output correctness requires full campaign gates"
+  ]
+}

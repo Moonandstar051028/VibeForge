@@ -7,7 +7,9 @@ def retrieve(rules, profile, query="", limit=5):
     matches = []
     words = set(query.lower().split())
     for rule in rules:
-        if rule["status"] not in ("local_validated", "cross_config_validated"):
+        # Invalidated rules are measured counterevidence. Keep them visible to
+        # planning while their status prevents treating them as recommendations.
+        if rule["status"] not in ("local_validated", "cross_config_validated", "invalidated"):
             continue
         if not all(profile.get(key) == value for key, value in rule["conditions"].items()):
             continue

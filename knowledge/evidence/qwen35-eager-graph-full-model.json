@@ -1,0 +1,91 @@
+{
+  "scope": "full-model independent validation, Codex-assisted candidate, no automatic campaign promotion",
+  "binding": {
+    "candidate": "v-e92069e079523fe50e8f",
+    "initial_ref": "v-da1d3d79027af88f3f40",
+    "config_hash": "7d06805d523780defad42504e465fb6acb2ddaedf9b4502776cb3ce2a1065d97",
+    "profile_hash": "4590f8ae3552dfde741866c2c964e345d8101be37c99afc5d6b1c0af25faf669",
+    "origin": "Codex root-assisted recipe implementation; independent verification, no promotion"
+  },
+  "decision": {
+    "outcome": "accept",
+    "reason": "measured_gain",
+    "gain": 0.08624515612285907,
+    "lower": 0.07126504082515099,
+    "upper": 0.10169040306357723,
+    "objective": "throughput",
+    "direction": "maximize"
+  },
+  "profiles": {
+    "interactive": {
+      "baseline_mean_tokens_per_second": 11.098021367027432,
+      "candidate_mean_tokens_per_second": 12.235943251911431,
+      "gain": 0.1030232023978567,
+      "lower": 0.06915812532629757,
+      "upper": 0.13664112894504132,
+      "confidence": 0.95,
+      "pairs": 5,
+      "method": "paired_run_bootstrap",
+      "resamples": 2000
+    },
+    "agent_2k": {
+      "baseline_mean_tokens_per_second": 8.593684771420405,
+      "candidate_mean_tokens_per_second": 9.156319319235878,
+      "gain": 0.06559471279005576,
+      "lower": 0.051762354020658874,
+      "upper": 0.08459334765196976,
+      "confidence": 0.95,
+      "pairs": 5,
+      "method": "paired_run_bootstrap",
+      "resamples": 2000
+    },
+    "concurrent_2": {
+      "baseline_mean_tokens_per_second": 10.588567667529883,
+      "candidate_mean_tokens_per_second": 11.771936248069535,
+      "gain": 0.11259878679534178,
+      "lower": 0.0892166085265956,
+      "upper": 0.14298227356391158,
+      "confidence": 0.95,
+      "pairs": 5,
+      "method": "paired_run_bootstrap",
+      "resamples": 2000
+    }
+  },
+  "quality": {
+    "passed": true,
+    "metrics": {
+      "accuracy": 1.0
+    },
+    "repeat_count": 3
+  },
+  "correctness": {
+    "passed": true,
+    "reference": "Frozen exact-token regression reference, sampled logits and concurrent isolation"
+  },
+  "formal_protocol": {
+    "pairs": 5,
+    "warmup": 1,
+    "measurement_protocol_version": 2,
+    "confidence": 0.95,
+    "min_gain": 0.02,
+    "max_profile_regression": 0.03
+  },
+  "raw_report": "var/campaigns/qwen35-codex-graph-focused-20261112/isolated-validation/1794422232602672337/report.json",
+  "raw_report_sha256": "31fea37e55d280cfbc5c67e66ac76784155f7f25bd616c2ca5f4be89ae635e38",
+  "mechanism": {
+    "baseline_cudaLaunchKernel": 100623,
+    "candidate_cudaLaunchKernel": 81183,
+    "candidate_cudaGraphLaunch": 720
+  },
+  "limitations": [
+    "Qwen3.5-27B NF4/BF16 on A100 40GB, transformers 5.20.2",
+    "256/2048/512 input tokens; max 32 output tokens; concurrency 1/1/2",
+    "Warm inference timing excludes graph capture/warmup; not a cold-request latency claim",
+    "No long-context, multi-GPU or broad task benchmark claim",
+    "Root Codex supplied and corrected the measured factory; local Codex did not autonomously discover the final improvement"
+  ],
+  "codex_self_hosting_smoke": {
+    "passed": true,
+    "evidence": "var/campaigns/qwen35-codex-graph-focused-20261112/isolated-validation/1794422232602672337/codex-smoke.json"
+  }
+}

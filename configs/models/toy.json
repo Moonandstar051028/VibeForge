@@ -1,1 +1,1 @@
-{"name": "toy-fixture", "fixture": true}
+{"name": "toy-fixture", "fixture": true, "max_context": 32768}

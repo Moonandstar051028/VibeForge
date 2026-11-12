@@ -42,7 +42,10 @@ def evaluate(url, cases, timeout):
             results.append({"id": case["id"], "passed": False, "error": str(error)})
         if passed:
             earned += weight
-    return {"passed": True, "metrics": {"accuracy": earned / total}, "cases": results}
+    # Wrong answers contribute to accuracy; transport/response failures invalidate
+    # the run even when the remaining answers would meet the configured floor.
+    return {"passed": not any("error" in result for result in results),
+            "metrics": {"accuracy": earned / total}, "cases": results}
 
 
 def main():

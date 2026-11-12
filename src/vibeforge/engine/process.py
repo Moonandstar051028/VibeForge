@@ -67,9 +67,12 @@ class EngineProcess:
         env["PYTHONDONTWRITEBYTECODE"] = "1"
         env["HF_HUB_OFFLINE"] = "1"
         env["TOKENIZERS_PARALLELISM"] = "false"
+        # The managed runtime cannot create PyTorch Inductor's multiprocessing semaphores.
+        env["TORCHINDUCTOR_COMPILE_THREADS"] = "1"
         env["CUDA_CACHE_PATH"] = str(self.paths.data / "cache" / "cuda")
         env["TRITON_CACHE_DIR"] = str(self.paths.data / "cache" / "triton")
         env["TORCH_EXTENSIONS_DIR"] = str(self.paths.data / "cache" / "extensions")
+        env["TORCHINDUCTOR_CACHE_DIR"] = str(self.paths.data / "cache" / "inductor")
         scratch = self.paths.data / "cache" / "engine-scratch"
         scratch.mkdir(parents=True, exist_ok=True)
         env["TMPDIR"] = str(scratch)

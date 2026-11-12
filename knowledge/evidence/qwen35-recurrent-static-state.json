@@ -1,0 +1,59 @@
+{
+  "scope": "component_only",
+  "gpu": "NVIDIA A100-PCIE-40GB",
+  "gpu_probe": {
+    "kind": "component_microbenchmark",
+    "records": [
+      {
+        "batch": 1,
+        "max_abs_errors": [
+          0.00048828125,
+          9.5367431640625e-07
+        ],
+        "seconds": [
+          0.00023678831523284315,
+          9.647408965975046e-05
+        ],
+        "speedup": 2.4544239398159626
+      },
+      {
+        "batch": 2,
+        "max_abs_errors": [
+          0.0009765625,
+          9.5367431640625e-07
+        ],
+        "seconds": [
+          0.0002375664049759507,
+          9.777855826541782e-05
+        ],
+        "speedup": 2.4296370205324744
+      }
+    ],
+    "seed": 123,
+    "iterations": 200,
+    "clone_static_state": true,
+    "distinct_marked_states": 48,
+    "end_to_end": "unverified"
+  },
+  "frontend_guard_reproduction": {
+    "device": "cpu",
+    "backend": "eager",
+    "static_states": 48,
+    "direct_error": "FailOnRecompileLimitHit",
+    "clone_max_abs_error": 0
+  },
+  "real_model_failure": {
+    "campaign": "qwen35-iterative-final-20261111",
+    "iteration": 2,
+    "candidate": "v-86934d23b9ae0a310a5c",
+    "reason": "correctness_failed",
+    "error": "FailOnRecompileLimitHit",
+    "last_guard": "___check_obj_id(initial_state, ...)",
+    "source": "var/campaigns/qwen35-iterative-final-20261111/iterations/0002/probe/0000/engine.log"
+  },
+  "root_cause": "Transformers cache_utils marks each recurrent state address static. Direct compilation specializes by state identity. Clone outside the compiled region avoids that identity specialization.",
+  "limitations": [
+    "GPU component outputs have small nonzero differences over 48 randomized states. Full model token/logit/quality gates are still mandatory.",
+    "No full-model speedup has been established."
+  ]
+}

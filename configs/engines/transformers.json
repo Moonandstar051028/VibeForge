@@ -4,5 +4,5 @@
   "supported_devices": ["cpu", "cuda", "rocm"],
   "supported_quantization": ["none", "bnb-nf4", "bnb-fp4", "bnb-int8"],
   "required_packages": ["torch", "transformers", "safetensors"],
-  "build_command": [], "build_timeout_seconds": 300
+  "build_command": ["{python}", "build_native.py"], "build_timeout_seconds": 300
 }

@@ -1,0 +1,37 @@
+{
+  "kind": "component_microbenchmark",
+  "records": [
+    {
+      "batch": 1,
+      "max_abs_errors": [
+        0.0,
+        0.0
+      ],
+      "seconds": [
+        0.0002276140544563532,
+        0.00017896665493026377
+      ],
+      "speedup": 1.2718238184931456
+    },
+    {
+      "batch": 2,
+      "max_abs_errors": [
+        0.0,
+        0.0
+      ],
+      "seconds": [
+        0.00026221588486805556,
+        0.00014339061919599772
+      ],
+      "speedup": 1.8286822829716496
+    }
+  ],
+  "seed": 123,
+  "iterations": 200,
+  "clone_static_state": true,
+  "preserve_eager_rounding": false,
+  "cuda_graph": true,
+  "cross_stream_requests": 48,
+  "distinct_marked_states": 48,
+  "end_to_end": "unverified"
+}

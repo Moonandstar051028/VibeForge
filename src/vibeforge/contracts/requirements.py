@@ -9,6 +9,12 @@ OBJECTIVES = {
     "peak_rss_bytes": "minimize",
     "startup_seconds": "minimize",
     "source_bytes": "minimize",
+    "ttft_seconds_p95": "minimize",
+    "tpot_seconds_p95": "minimize",
+    "prefill_forward_seconds_p95": "minimize",
+    "decode_forward_seconds_p95": "minimize",
+    "cuda_peak_allocated_bytes": "minimize",
+    "cuda_peak_reserved_bytes": "minimize",
 }
 CAPABILITIES = {"generate", "logits", "chat", "chat_completion"}
 

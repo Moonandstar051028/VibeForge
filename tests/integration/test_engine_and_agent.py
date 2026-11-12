@@ -1,27 +1,91 @@
 import json
+import shutil
 import sys
 import threading
+from collections import UserDict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+import pytest
 
 from vibeforge.agent.runner import run_agent, smoke_agent
 from vibeforge.engine.process import EngineProcess
+from vibeforge.engine.tokenization import count_tokens
 from vibeforge.evaluation.reference import capture_reference
 from vibeforge.evaluation.correctness import evaluate_correctness
+
+
+def test_chat_token_count_extracts_batch_encoding_input_ids():
+    class Tokenizer:
+        def apply_chat_template(self, messages, **arguments):
+            return UserDict({"input_ids": list(range(37)), "attention_mask": [1] * 37})
+
+    request = {"messages": [{"role": "user", "content": "x"}]}
+    assert len(count_tokens(Tokenizer(), request)) == 37
 
 
 def test_engine_http_reference_and_qwen_agent_protocol(paths, project):
     engine = EngineProcess(paths, "transport", sys.executable, startup_timeout=10)
     try:
         client = engine.start(project / "templates/engine/toy", paths.campaign("transport") / "engine.log")
+        started = client.telemetry_start(session_id="integration-agent", max_requests=4,
+                                         retention_seconds=60)
+        assert started["request_count"] == 0
         smoke = smoke_agent(client)
+        timing = client.generate(prompt="profile fixture", max_new_tokens=4, fixed_length=True)["host_observation"]
+        assert timing["output_tokens"] == 4 and timing["backend_wall_seconds"] > 0
+        assert timing["ttft_seconds"] is None and timing["output_tokens_per_second"] > 0
+        profile = client.profile(prompt="profile fixture", max_new_tokens=4)
+        assert profile["kind"] == "host_inference_profile" and profile["top_cpu_ops"]
+        assert "cProfile" in profile["profiler"] and not profile["top_device_ops"]
+        assert profile["source_hash"] and profile["normal_request"]["output_tokens"] == 4
+        with pytest.raises(RuntimeError, match="between 1 and 128"):
+            client.profile(prompt="profile fixture", max_new_tokens=129)
         assert smoke["passed"]
         assert smoke["framework"] == "Qwen-Agent"
+        plain_tokens = client.tokenize(text="hello")
+        chat_tokens = client.tokenize(
+            messages=[{"role": "user", "content": "hello"}],
+            tools=[{"type": "function", "function": {"name": "ping", "description": "Ping",
+                    "parameters": {"type": "object", "properties": {}}}}],
+        )
+        assert plain_tokens["count"] == 5
+        assert chat_tokens["count"] > plain_tokens["count"]
+        response = client.request("v1/responses", {
+            "model": "toy", "input": "verify responses",
+            "tools": [{"type": "function", "name": "submit_candidate", "description": "Submit",
+                       "parameters": {"type": "object", "properties": {}}}],
+        })
+        assert response["object"] == "response" and response["status"] == "completed"
+        assert response["output"][0]["type"] == "function_call"
+        live = client.telemetry_report("integration-agent")
+        assert live["request_count"] >= 3
+        assert live["operations"]["chat_completion"] >= 2
+        assert live["output_tokens"] >= 0
+        assert client.telemetry_finish("integration-agent")["finished_at"]
         reference = capture_reference(client, [{"id": "x", "prompt": "hello", "max_new_tokens": 2}],
                                       paths.campaign("transport") / "reference.json", {"fixture": True})
         assert evaluate_correctness(client, reference, {"atol": 0, "rtol": 0})["passed"]
     finally:
         engine.stop()
     assert not engine.record.exists()
+
+
+def test_engine_reports_candidate_concurrent_scheduler(paths, project, tmp_path):
+    source = tmp_path / "concurrent-engine"
+    shutil.copytree(project / "templates/engine/toy", source)
+    config = json.loads((source / "engine.json").read_text())
+    config["request_scheduler"] = "concurrent_requests"
+    (source / "engine.json").write_text(json.dumps(config))
+    engine = EngineProcess(paths, "concurrent-transport", sys.executable, startup_timeout=10)
+    try:
+        client = engine.start(source, paths.campaign("concurrent-transport") / "engine.log")
+        assert client.health()["runtime"]["request_scheduler"] == "concurrent_requests"
+        observation = client.generate(
+            prompt="scheduler", max_new_tokens=2, fixed_length=True)["host_observation"]
+        assert observation["instrumentation"] == "host wall clock only"
+        assert "not thread-safe" in observation["token_timing_unavailable_reason"]
+    finally:
+        engine.stop()
 
 
 class MockQwenEndpoint(BaseHTTPRequestHandler):
@@ -102,4 +166,8 @@ def test_qwen_agent_assistant_executes_audited_candidate_tools(tmp_path, project
     assert [item["tool"] for item in actions if item.get("tool")] == [
         "replace_text", "check_python", "submit_candidate", "submit_candidate"
     ]
-    assert any("Analyze the previous" in action.get("error", "") for action in actions)
+    assert any(
+        "previous_analysis" in action.get("error", "")
+        and not action.get("result", {}).get("submitted", True)
+        for action in actions
+    )

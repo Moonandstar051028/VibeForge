@@ -1,6 +1,7 @@
 """Load one candidate backend from its frozen source directory."""
 
 import importlib.util
+from copy import deepcopy
 from pathlib import Path
 from vibeforge.storage.atomic import read_json
 
@@ -16,5 +17,6 @@ def load_backend(directory):
         if not callable(getattr(module, name, None)):
             raise ValueError(f"Missing backend callable: {name}")
     config = read_json(directory / "engine.json")
-    module.load(config)
+    # The candidate may keep or mutate its input; retain an independent contract.
+    module.load(deepcopy(config))
     return module, config

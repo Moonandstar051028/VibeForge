@@ -1,0 +1,36 @@
+{
+  "name": "toy-qwen-agent-system-validation",
+  "data_root": "var",
+  "model": "configs/models/toy.json",
+  "hardware": "configs/hardware/cpu.json",
+  "workload": "configs/workloads/toy.json",
+  "evaluation": "configs/evaluation/toy.json",
+  "agent": {
+    "mode": "local",
+    "framework": "qwen-agent",
+    "max_turns": 4,
+    "max_new_tokens": 256,
+    "timeout_seconds": 30,
+    "request_timeout": 10,
+    "thinking": {"enabled": false},
+    "prompt": "templates/prompts/implementation.md"
+  },
+  "engine_template": "templates/engine/toy",
+  "runtime_python": "python3",
+  "profiling": {
+    "enabled": true,
+    "coverage": "all",
+    "max_new_tokens": 32,
+    "max_profiles_per_session": 2,
+    "max_matrix_profiles": 8,
+    "max_age_seconds": 600,
+    "timeout_seconds": 60
+  },
+  "budget": {
+    "max_iterations": 1,
+    "max_proposals": 1,
+    "max_seconds": 180,
+    "agent_seconds": 30,
+    "max_failures": 2
+  }
+}

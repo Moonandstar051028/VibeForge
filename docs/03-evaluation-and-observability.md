@@ -1,5 +1,7 @@
 # 03：评测、实时日志与上下文恢复
 
+> 本章中的指标体系包含目标态研究口径。标为“当前实现”的段落对应现有代码；未明确标为当前实现的完整指标或最终汇总要求，不代表都已自动产出。
+
 ## 1. 评测协议先于优化
 
 Agent 不能用“看起来更快”作为提升版本的依据。每次活动开始前，固定下列协议并计算哈希：
@@ -36,6 +38,29 @@ Agent 不能用“看起来更快”作为提升版本的依据。每次活动�
 - 固定种子有助于复现，但不保证不同内核在采样生成时逐 token 相同。数值比较与生成质量检查分别报告。
 - 允许量化或近似计算时，额外固定质量评测与允许损失，不能在看到性能后临时放宽标准。
 - 对发现的失败增加最小复现用例；用例及其期望结果经过独立确认后纳入回归集。
+
+#### 当前实现：v3 组合门禁
+
+初始引擎生成的 `reference.json` 是回归基线，角色明确标记为 `regression_baseline_not_ground_truth`，不能证明答案正确。非测试模型使用自生成参考时，配置必须同时包含独立任务质量评测、绝对质量下限和相对初始质量的退化上限。初始引擎也必须通过质量门禁，否则自举停止，不建立稳定版本；候选不能仅凭复现初始引擎的错误通过。
+
+参考默认对每个普通及固定长度负载用例重复生成 3 次，保存完整 token 序列及其出现次数。严格模式要求主序列占比至少为 `2/3`，否则拒绝建立参考。候选输出必须属于已观察到的完整序列集合，交错请求后的重放也按同一集合检查；并非要求每次等于第一次输出。该集合包含低频变体，因此这里验证的是有限参考集合内的一致性，不是确定性保证或输出分布等价。需要参考完全一致时，将 `min_reference_consensus` 设为 `1`。近似模式取与参考集合的最大 token 一致率，并仍须通过独立质量门禁。
+
+prefill 和主参考序列前两个 token 的续写输入分别重复采集抽样 logits，保存中位数、最小值和最大值。建立参考前，所有采样相对中位数的偏差必须满足 `reference_atol + reference_rtol * abs(median)` 及配置的归一化 RMS 上限；异常值和过大波动直接拒绝，不能任意扩宽包络。候选按冻结包络加 `atol/rtol` 检查，归一化 RMS 仍相对中位数计算，避免波动包络放宽累计误差约束。报告分别保留生成、prefill、续写数值、重放、质量及失败分类。
+
+| 配置 | 当前规则 |
+| --- | --- |
+| `evaluation.reference_repeats` | 默认 3，整数 2—10 |
+| `evaluation.min_reference_consensus` | 默认 `2/3`，范围 `(0, 1]`；严格模式强制检查 |
+| `evaluation.reference_atol/reference_rtol` | 参考自身波动上限，未设置时沿用 `atol/rtol` |
+| `evaluation.quality.repeats` | 默认 3，整数 1—10；超时限制按每次执行计算 |
+| `evaluation.quality.min_scores` | 所有重复执行都必须达到的绝对分数下限 |
+| `evaluation.quality.max_regressions` | 候选各指标最差分数相对初始引擎最差分数允许的绝对下降量，不随稳定版更新 |
+
+质量评测使用人工声明且冻结哈希的脚本和答案文件，每次执行使用独立的 `quality/runs/0001/` 等目录。根目录 `quality/report.json` 保存逐次结果和指标的 min/max/mean；门禁采用最差值，任一次执行失败或超限即拒绝。内置评分器将答错计入准确率；请求失败或返回格式错误直接使本次评测无效，不能被其余正确答案抵消。这是重复执行的保守检查，不是统计置信区间。默认本地配置及 Qwen 27B 配置已接入 `task-quality-core.json` 的 10 条人工答案用例，重复 3 次，准确率下限 0.8、相对下降上限 0.05。这些是公开的基础回归题，尚未在目标 Qwen 上校准，不能代替业务评测或保留集。
+
+外部 `evaluation.reference_path` 必须使用 schema v3，声明 `provenance.oracle=independent`。除了文件及内部哈希，加载时还验证重复次数、变体计数和共识、有限且有界的数值包络，以及当前全部普通和性能用例的提示词、长度、场景等身份与覆盖。独立来源仍需提供者确认，声明和哈希本身不能证明答案正确；近似模式仍强制独立任务质量检查。
+
+当前 Transformers 生成路径使用 `do_sample=False`；重复参考主要处理运行时数值波动，不支持以此验证 temperature/top-p 随机采样分布。重复在同一引擎进程内执行，尚未覆盖跨进程稳定性。新活动使用 campaign schema v4；旧 v1/v2/v3 活动保留历史证据，但不能直接以新闭环契约恢复运行，需新建活动重采参考。外部独立参考文件仍使用 reference schema v3。
 
 ### 2.2 评测独立性
 
@@ -76,6 +101,51 @@ Agent 提供的自测是辅助证据，正式准入仍由固定评测器执行�
 
 也可以选择“降低单请求 decode 时延”等其他主目标。多目标实验需预先定义排序规则或维护 Pareto 候选集，并明确哪个版本用于自托管，不能事后挑选最有利指标。
 
+### 3.2 已实现的三种观测口径
+
+| 来源 | 当前记录 | 用途与边界 |
+| --- | --- | --- |
+| 正常推理路径的宿主观测 | `host_observation`：后端墙钟、排队、内部 TTFT/TPOT、token 间隔、分词/反分词、prefill/decode forward、CUDA allocated/reserved 峰值、实际生成参数和 cache 类 | 计时器位于可编辑候选源码之外；后端墙钟包含分词、生成、解码，排除排队与 HTTP。token 数来自返回 ID/usage，正式评测还要独立核验 |
+| Agent 会话 telemetry | Agent 使用稳定引擎进行规划时，按会话汇总普通请求的排队、后端墙钟、阶段时间、token 量和缺失项 | 可用 `read_telemetry` 在会话中读取，帮助判断 Agent 自身真实负载；只作诊断，不加入正式 A/B 样本 |
+| 独立诊断请求 `/profile` | 一次预热、一次无 profiler 的正常请求、一次插桩请求；CPU/GPU 算子热点及首个/后续 forward 的分组 | 用于回答“时间主要花在哪些操作上”，不纳入正式准入样本。`normal_request` 和插桩 `timing` 分开，不能把 profiler 开销当作真实速度 |
+| 正式性能评测 | 外部客户端请求时延、整组墙钟、经固定参考校验的输出量、RSS、启动和源码体积 | `throughput = 完成的输出 token 总数 / 整组外部墙钟`；并发队列、HTTP 和服务开销在此口径内。候选自报 `elapsed_seconds` 仅保留为 `backend_metrics` 诊断信息 |
+
+正常请求通过临时根模型 hook、分词器代理和 token-ready 回调观测，结束或异常时移除插桩。CUDA events 在请求末尾统一读取，不逐 token 强制同步。`ttft_seconds` 是后端调用开始至内部首 token 就绪，`tpot_seconds` 是后续内部 token 间隔均值，不含服务排队和 HTTP。当前服务生成完成后才发送 SSE，客户端首 token 到达时间 `client_ttft_seconds` 仍为 `null`。只有单次可观测的 `MODEL.generate` 且回调数与输出长度一致时才发布内部 token 时延，否则明确缺失。正式保护指标不回退采用候选自报值；缺少所需可信指标时判为无效。
+
+CPU 分词计时与 CUDA forward 计时分别标明时钟。CUDA stream event 区间可能包含主机供给不足造成的 stream 空隙，不等于纯 kernel 时间；观测插桩也有少量开销，稳定版与候选版使用同样的宿主插桩。`peak_allocated_bytes` 与缓存分配器的 `peak_reserved_bytes` 分开报告，不能将 reserved 当作正在使用的模型权重大小。
+
+正式测量前后保存设备与环境快照；测量窗口内另由宿主按 `evaluation.device_sample_interval` 持续采集 CUDA 可见 GPU 的温度、SM/显存频率、功耗/功率上限、GPU/显存利用率，并按设备保留样本数、均值、最小值和最大值。温度门限检查窗口峰值而非只检查边界。`require_continuous_device_telemetry=true` 时采集不可用会使该组测量无效；当前连续采集仅支持 NVIDIA/CUDA。功率采样没有积分为能耗，`utilization.memory` 也不能当作实际 GB/s 带宽。
+
+Transformers 诊断使用 `torch.profiler`，按 self CPU/device 时间及调用次数分别列出热点；根模型首个/后续 forward 标为 `vibeforge.prefill` / `vibeforge.decode`，可匹配模块另有 `linear_attention`、`full_attention`、`mlp`、`lm_head` inclusive 分组。模块耗时用于定位修改范围，父子区间不能相加；CPU 与 GPU 时间也不能相加充当墙钟。`measurements` 为 Agent 提供带单位的数值索引。模型提示保留该数值索引与模块分组，只展示前 5 个算子及超长名称预览；完整 profiler 记录留在宿主证据中，避免诊断信息挤占工具历史。非 Torch 后端回退为 `cProfile`，明确只观察 Python/CPU。不支持 hook 时相应项缺失。hook 能找到 legacy 或 Cache 风格 KV 结构时，记录其 tensor `numel * element_size` 的逻辑 payload 字节；这不包含 allocator 保留、碎片、元数据、共享存储或临时副本，不能冒充实际显存占用。当前仍没有真实 DRAM 带宽、SM occupancy 或能耗测量。
+
+同名 CPU/CUDA user annotation 分开处理：`phases` 只保留 CPU 标注区间及其归属 kernel 时间，避免 CUDA 同名记录覆盖 CPU 数值；`top_device_ops` 只列 device kernel/memcpy，`top_device_operator_ops` 列 CPU operator 的设备时间归属，二者重叠不能求和。`lm_head` 独立归类，不按其 `Linear` 类名误归 linear attention。
+
+诊断参数冻结在 `profiling`：`coverage=selected|all`、`max_new_tokens=128`（上限 128）、`max_profiles_per_session=2`（上限 2）、`max_matrix_profiles` 和 `max_age_seconds`。控制器按场景与 prompt 轮转建立 `profile_matrix`；`all` 覆盖冻结矩阵直到上限，`selected` 使用当前选定集合。每个矩阵项都有独立证据路径、普通请求指标和热点摘要。稳定版缓存只有源码身份、画像、负载一致且未过期时可复用；每次提案复制为 `iterations/<编号>/observation.json`。会话追加诊断仍只允许冻结场景。诊断长度受场景和 128 token 上限约束，不能把短序列热点推广到未覆盖长度或并发。
+
+这些边界防止普通候选通过修改自己的计时字段影响结论；并非针对任意恶意 Python 代码的独立安全证明。正确性参考也仅覆盖已冻结用例，不能据此宣称所有输入都正确。
+
+### 3.3 先确认真正执行的配置
+
+引擎 `/health`、每次启动的 `logs/*.runtime.json` 及 `/profile` 的 `runtime` 保存已加载模型信息：请求配置、实际 `_attn_implementation`、量化校验、dtype/device、模块类型计数、包版本、生成默认值、执行路径和调度方式。模型默认值可能被后端覆盖，普通请求的 `observed_generate_kwargs` 才是实际传给 `MODEL.generate` 的可观测参数；`observed_cache_class` 是 forward 返回的 cache 类。默认配置与已执行算子分层记录。
+
+提交工具和控制器都检查兼容性。仅把已生效的 SDPA 默认值显式写入，不算有效配置优化。`paged|eager` 虽是可识别名称，但当前串行 `generate` 适配器没有 paged-cache 分配器和 continuous batching 路径，因此拒绝。可选依赖缺失也拒绝；依赖存在不保证模型/精度/硬件兼容，实际启动仍需通过。对于 Qwen 混合注意力，还需分别看 full attention 与 gated-delta/conv 路径；仅切换 full attention 后端不保证加速其余层。
+
+### 3.4 有代表性的冻结负载
+
+`configs/workloads/representative.json` 提供初始长度矩阵，每场景两条固定合成提示词，实际输入长度在冻结参考时由目标 tokenizer 核验：
+
+| 场景 ID | 输入 token | 固定输出 token | 并发 | 聚合权重 | 主要检查 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `interactive` | 256 | 128 | 1 | 1 | 常规短交互 |
+| `agent_2k` | 2048 | 128 | 1 | 2 | Agent 分析上下文 |
+| `context_8k` | 8192 | 64 | 1 | 1 | 长输入 prefill/cache 压力 |
+| `long_decode` | 512 | 256 | 1 | 1 | 连续 decode |
+| `concurrent_2` | 512 | 64 | 2 | 1 | 排队与并发隔离 |
+
+配置 `profiles` 的每项包含 `id/prompts/max_new_tokens/concurrency/requests_per_prompt/weight`，可设 `min_input_tokens/max_input_tokens`，并以 `observation_profile` 指定默认诊断场景。仍兼容单场景旧格式。新增场景、长度或权重必须创建新活动，不能复用旧协议的参考值。此矩阵用于暴露长度和调度差异，不代表真实生产流量；后续应按实际请求分布替换提示词及权重，增加保留负载、并发层级与重复次数。5 输入/16 输出只适合快速协议冒烟，不能作为模型引擎的总体性能结论。
+
+除了 token/s，Agent 至少要结合内部 TTFT/TPOT、请求 P50/P95/P99、排队、分词、prefill/decode、模块与算子热点、显存 allocated/reserved、实际 cache/后端、输出正确性及逐场景退化来判断。短输入/长输出主要观察 decode；长输入观察 prefill；并发请求首先区分排队与真正批处理。
+
 ## 4. 如何确认收益
 
 ### 4.1 可比较的测量流程
@@ -98,6 +168,8 @@ Agent 提供的自测是辅助证据，正式准入仍由固定评测器执行�
 
 报告必须注明指标、原值、分母和工作负载。不要将“时延降低比例”与“吞吐提高比例”混为同一个数值。
 
+单场景保持 `完成的输出 token / 外部墙钟`。多场景主吞吐得分为 `exp(Σ w_i log(throughput_i) / Σ w_i)`，是固定权重的几何聚合，不是把请求混在一起的总 token/s。同时保存每场景原值；其他聚合保护指标取最差场景值，例如场景 P95 的最大值，不能称作混合请求总体 P95。参考比较和输出哈希在计时窗口外进行。
+
 ### 4.3 统计与决策
 
 - 最小有效收益记为 `ε`，保护指标容许退化记为各自的 `δ`，在活动开始前固定。
@@ -109,10 +181,26 @@ Agent 提供的自测是辅助证据，正式准入仍由固定评测器执行�
 
 这些规则不要求首版实现复杂统计系统，但首版也必须保留原始样本、重复测量和明确的最小收益门槛。
 
-### 4.4 单轮与累计收益
+多场景额外按配对组检查每个场景的吞吐收益区间：`max_profile_regression` 默认 3%，下界必须不低于 -3%。上界仍低于 -3% 时拒绝；是否超过退化阈值尚不明确时按协议有限复测。总体得分提高不能掩盖某场景退化。每组请求少于冻结的 `min_tail_requests`（默认 100）时，报告用结构化字段将尾延迟标为样本不足，P95/P99 仅作描述；五组 A/B 可以估计组间吞吐变化，不能据此宣称线上尾延迟 SLO 已充分验证。
+
+### 4.4 事前预测与实验验证
+
+有效候选必须先提交 `experiment_plan`：绑定当前观测，描述瓶颈、原因假设和对应源码变化，选择已实现指标，给出增加/减少方向、正数 `expected_change_pct`、验证方法和历史对照编号。新增本地 Agent 的 v2 契约还要求：`bottleneck_reference={evidence_path,metric,value,unit}` 精确引用宿主 `measurements`，`target_profile_ids` 指明场景，`runtime_preconditions=[{field,equals}]` 绑定真实运行条件，并提供 `bottleneck_direction`、正数 `expected_bottleneck_change_pct`、`expected_change_basis`。数值、单位、源码身份、场景或前提不匹配时不进入实验。指标除原有吞吐/请求时延/RSS/启动/源码体积，还包括内部 TTFT、TPOT、prefill/decode P95 与 CUDA allocated/reserved 峰值。
+
+若引用的是普通请求中可加的阶段耗时，宿主用该阶段占请求墙钟的比例计算 Amdahl 上限，并写入计划的 `benefit_bound`。预期总体收益超过“完全消除该阶段”仍可能达到的上限时，以 `implausible_expected_gain` 拒绝；阶段与墙钟重叠、时钟口径不兼容或引用完整请求墙钟时不伪造有限上限。该门禁用于排除数量级不可能的提案，不证明处于上限以内的预测必然成立。
+
+正式冻结前可启用 `probe`：候选先执行小样本启动、正确性和性能方向检查，结果写入 probe 证据；若启用 `refinement`，至多按预算把失败原因交回 Agent 修订。修订使用独立工作区并重新经过候选门禁和构建。probe 没有正式 A/B 的重复数和统计保证，任何结果都不能直接晋升，也不能混入 `verification.json` 的正式收益区间。
+
+正确性通过且完成配对评测后，控制器按计划方向计算该指标收益区间，写入 `verification.json`：区间下界达到事前预测百分比为 `supported`，上界低于预测为 `refuted`，其余为 `inconclusive`。污染样本、缺少指标或没有性能测量不能支持预测。未进入该阶段时没有验证文件，复盘必须说明没有性能结论。
+
+正确性通过后，控制器还按被引用观测的同一场景、prompt 与输出上限剖析候选，保存 `candidate-observation.json`，并在验证记录中核对目标瓶颈数值是否按预期方向和幅度变化，状态为 `consistent_with_prediction/prediction_not_observed/unavailable`。这是单次诊断前后对比，标明 `causal_proof=false`；正式收益仍需重复配对组。结果、预测验证和反思一起进入实验记忆，下一轮能够分辨“机制未发生”“机制改善但总耗时未改善”“统计证据不足”。
+
+该验证与正式准入分开：主目标收益、保护指标和质量标准仍按活动开始前的协议决定是否提升。达到预测不等于证明原因假设；例如同时改变多个路径，仍需消融。反之，候选可能达到准入的最小收益，却未达到它自己预测的更高幅度。
+
+### 4.5 单轮与累计收益
 
 - 单轮收益：候选相对当前稳定版，在本轮同条件下比较。
-- 累计收益：最终稳定版相对初始 `v0`，在统一协议下重新测量。
+- 累计收益目标：最终稳定版相对初始 `v0`，在统一协议下重新测量。当前控制器仅保存 `initial_ref` 和各轮相对当时稳定版的配对结果，尚未在活动结束时自动执行这组累计重测。
 - 历史测量可供分析，不能在环境不同的情况下直接拼接成累计提升。
 
 ## 5. 日志是恢复和研究的数据基础
@@ -207,10 +295,15 @@ VibeForge/
         ├── configs/             # 启动时冻结的配置快照
         ├── events/              # 追加式结构化事件
         ├── resume/              # 可重建的上下文快照
+        ├── observations/        # 绑定稳定版身份的宿主诊断缓存与追加观测
+        ├── memory/index.json    # 可重建的历史假设、事实与解释索引
+        ├── final-analysis/      # 按分析目标编号保存只读会话轨迹
         ├── knowledge-drafts/    # 待验证的经验和规则草案
         ├── summary.md           # 活动总结
         └── iterations/<iteration-id>/
             ├── hypothesis.md    # 事前假设与预期
+            ├── observation.json # 本次提案使用的观测快照
+            ├── candidate-gate.json # 实际差异、指纹和计划证据门槛
             ├── candidate.json   # 父版本、哈希与产物引用
             ├── change.patch     # 代码差异
             ├── commands.jsonl   # 工具动作、参数、工作目录和结果
@@ -218,6 +311,8 @@ VibeForge/
             ├── correctness/     # 用例、参考结果与误差
             ├── benchmarks/      # 原始测量、设备状态与汇总
             ├── decision.json   # 准入结果、原因和证据
+            ├── verification.json # 事前预测与配对实测的对照（完成测量时）
+            ├── memory.json     # 单轮结构化事实、计划与反思
             └── analysis.md     # 事实、解释、反例与下一步
 ```
 
@@ -238,6 +333,16 @@ VibeForge/
 上下文快照带生成序号及来源引用。它是可重建的缓存；与权威状态不一致时，以控制程序对账后的状态和原始证据为准。
 
 上一轮分析完成并持久化后，才允许提交下一轮候选；活动结束时也要安排最后一轮的分析，避免只留下测量而没有解释。
+
+尝试编号、有效候选和正式性能对照分别计数。没有提交修改、Agent 协议失败或监控修复中断的尝试不算有效实验；候选正确性失败时必须提前拒绝并跳过性能 A/B。规划中的普通文字回复结束也不算流程完成：在原始时间及工具预算内，宿主保留上下文与工具轨迹，明确反馈一次，让模型完成修改与提交或报告具体阻塞；仍无法完成则保留失败证据，不能以空改动凑齐流水线。 工具声明必须与用途一致：规划的实验计划对象及其 v2 证据字段显式必填，复盘使用分析字段；不得等到模型提交后才首次告知计划的嵌套结构要求。
+
+当前实现从 SQLite 重建 `memory/index.json`、`memory/experience.json` 和每轮 `memory.json`，分别保存计划、决策/错误/验证事实、模型解释、结构化反思、已验证策略与反例。最近 6 条及最多 4 条相关历史保留详细摘要；所有更早尝试进入按策略聚合的 `older_history_summary`，不会完全退出上下文。`search_history(query, limit)` 检索当前与归档活动的完整索引，最多返回 10 条；这不是向量检索或模型自动压缩。
+
+活动结束后，后续活动可在证据根内保存旧活动的只读副本，用 `memory/archived-campaigns.json` 登记索引。兼容归档的已验证策略和反例进入经验摘要，完整分析与补丁仍按 `evidence_directory` 定向读取；不兼容记录可检索但不直接推荐。归档不并入当前轮次、待分析队列或正式对照，旧观测也不能绑定为本轮瓶颈证据。同配置、同画像、同稳定父版本且完成过评测的候选纳入宿主语义去重，因此防重复不依赖模型主动翻阅归档。
+
+读取长日志可使用 `read_evidence(path, offset, limit)` 到达截断后的部分，字符单位，默认 6,000、单次上限 12,000；`list_evidence` 每页 100 项，返回 `next_offset`。索引摘要用于定位，不应把摘要未提及当作原始证据不存在。
+
+只读分析优先选择最早待分析记录，规划会话使用最新已完成分析；每项复盘必须显式绑定目标编号、引用该轮文件、记录假设状态与下一步。模型或协议失败不能靠控制器拼接一段虚构归因来清除队列。分析无进展即中止推进，避免越积越多后把不同轮次的原因混写。复盘显式标明正式对照数据是否存在：`observation.json` 是修改前父版本，不能据此计算候选效果；正确性失败的候选未进入 A/B 时，其性能结论应保持未测。工具及控制器对常见量化误归属做一致拦截，普通推理和 profiler 计时必须标为同一版本的不同观测条件；不得用两者构造候选对照。自由文本的其他推理仍需结合证据审查。复盘输入包含该轮证据目录和决策路径；允许引用旧分析中的占位句作为事实证据，但完整占位回复仍不算完成复盘。
 
 ### 7.2 Agent 启动任务模板
 

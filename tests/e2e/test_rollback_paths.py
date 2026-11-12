@@ -10,7 +10,10 @@ from vibeforge.storage.atomic import digest
      "performance_regression"),
     ({"tool": "replace_text", "arguments": {
         "path": "engine.py", "old": "work = sum(range(120000))", "new": "work = ("}},
-     "execution_failed"),
+     "invalid_source"),
+    ({"tool": "replace_text", "arguments": {
+        "path": "engine.py", "old": "work = sum(range(120000))", "new": "raise RuntimeError('controlled runtime failure')"}},
+     "correctness_failed"),
     ({"tool": "write_file", "arguments": {"path": "../outside.py", "content": "bad"}},
      "execution_failed"),
 ])

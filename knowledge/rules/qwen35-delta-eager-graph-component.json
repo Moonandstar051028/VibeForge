@@ -1,0 +1,72 @@
+{
+  "rule_id": "qwen35-delta-eager-graph-component",
+  "status": "local_validated",
+  "conditions": {
+    "model_type": "qwen3_5_text",
+    "objective": "throughput",
+    "transformers_version": "5.20.2"
+  },
+  "hypothesis": "Replay the original eager single-token recurrent helper in CUDA Graphs to reduce launches while retaining exact operator order. This differs from numerically invalidated compiler fusion.",
+  "implementation": {
+    "scope": "component_only",
+    "recipe": "Add the supplied graph_delta factory before load() in engine.py; threading is already imported. Install with the supplied snippet after loading MODEL. Preserve output clones, signature cache, lock and stream event ordering. The factory inspects original source AST to verify **kwargs is unused before ignoring extras. This is required because real Transformers forwards extra arguments, not only cu_seqlens=None. Earlier factories fell back without executing graphs. Do not change scheduler, precision, outputs or prefill. Verify cudaGraphLaunch and reduced cudaLaunchKernel calls, exact tokens, quality, and formal paired throughput. A conservative 3 percent positive improvement hypothesis is not a measured claim. Before editing, inspect the current stable source: if graph_delta is already installed, do not wrap again or repeat this candidate. Treat this as the current baseline and select another evidence-grounded mechanism.",
+    "factory_source": "def graph_delta(original, torch):\n    import ast\n    import inspect\n    import textwrap\n    tree = ast.parse(textwrap.dedent(inspect.getsource(original)))\n    unused_kwargs = not any(isinstance(node, ast.Name) and node.id == 'kwargs' for node in ast.walk(tree))\n    cache = {}\n    lock = threading.Lock()\n\n    def reusable(query, key, value, g, beta, initial_state=None,\n                 output_final_state=False, use_qk_l2norm_in_kernel=False, **kwargs):\n        if unused_kwargs:\n            kwargs = {}\n        if query.shape[1] != 1 or initial_state is None or kwargs or not query.is_cuda:\n            return original(query, key, value, g, beta, initial_state=initial_state,\n                            output_final_state=output_final_state,\n                            use_qk_l2norm_in_kernel=use_qk_l2norm_in_kernel, **kwargs)\n        inputs = (query, key, value, g, beta, initial_state)\n        signature = (tuple((tuple(t.shape), t.dtype, t.device, tuple(t.stride())) for t in inputs),\n                     output_final_state, use_qk_l2norm_in_kernel)\n        with lock:\n            if signature not in cache:\n                if len(cache) >= 8:\n                    return original(query, key, value, g, beta, initial_state=initial_state,\n                                    output_final_state=output_final_state,\n                                    use_qk_l2norm_in_kernel=use_qk_l2norm_in_kernel)\n                buffers = tuple(t.detach().clone() for t in inputs)\n                stream = torch.cuda.Stream(device=query.device)\n                stream.wait_stream(torch.cuda.current_stream(query.device))\n                options = {'initial_state': buffers[5], 'output_final_state': output_final_state,\n                           'use_qk_l2norm_in_kernel': use_qk_l2norm_in_kernel}\n                with torch.cuda.stream(stream):\n                    for _ in range(3):\n                        original(*buffers[:5], **options)\n                stream.synchronize()\n                graph = torch.cuda.CUDAGraph()\n                with torch.cuda.graph(graph, stream=stream):\n                    outputs = original(*buffers[:5], **options)\n                done = torch.cuda.Event()\n                done.record(stream)\n                cache[signature] = buffers, graph, outputs, done\n                print({'event': 'qwen_delta_graph_captured', 'signature': str(signature),\n                       'original_ignores_kwargs': unused_kwargs}, flush=True)\n            buffers, graph, outputs, done = cache[signature]\n            current = torch.cuda.current_stream(query.device)\n            current.wait_event(done)\n            for target, source in zip(buffers, inputs):\n                target.copy_(source)\n            graph.replay()\n            # Replay buffers belong to the cache, never to a layer/request.\n            result = tuple(output.clone() if output is not None else None for output in outputs)\n            # A second request may use a different CUDA stream. Order its\n            # writes after these output copies without blocking the CPU.\n            done.record(current)\n            return result\n    return reusable\n",
+    "install_inside_load": "    import inspect\n    import transformers.models.qwen3_5.modeling_qwen3_5 as model_impl\n    model_impl.torch_recurrent_gated_delta_rule = graph_delta(\n        inspect.unwrap(model_impl.torch_recurrent_gated_delta_rule), torch)\n"
+  },
+  "validation": {
+    "scope": "full_model_local_validation",
+    "batch_results": [
+      {
+        "batch": 1,
+        "max_abs_errors": [
+          0.0,
+          0.0
+        ],
+        "seconds": [
+          0.0002422577585093677,
+          0.00017485704505816103
+        ],
+        "speedup": 1.3854618121265163
+      },
+      {
+        "batch": 2,
+        "max_abs_errors": [
+          0.0,
+          0.0
+        ],
+        "seconds": [
+          0.00023340564919635654,
+          0.000145390834659338
+        ],
+        "speedup": 1.6053670077845283
+      }
+    ],
+    "marked_states": 48,
+    "cross_stream_requests": 48,
+    "end_to_end": "Passed frozen correctness, quality and paired performance gates in independent validation",
+    "runtime_signature_revision": "Verified AST-unused kwargs handling; actual graph execution confirmed",
+    "gain": 0.08624515612285907,
+    "lower": 0.07126504082515099,
+    "upper": 0.10169040306357723
+  },
+  "evidence": [
+    {
+      "path": "knowledge/evidence/qwen35-delta-eager-graph-component.json"
+    },
+    {
+      "path": "scripts/experiments/qwen_delta_graph.py"
+    },
+    {
+      "path": "knowledge/evidence/qwen35-delta-eager-graph-real-signature.json"
+    },
+    {
+      "path": "knowledge/evidence/qwen35-eager-graph-full-model.json"
+    }
+  ],
+  "limitations": [
+    "Measured recipe supplied by Codex root-assisted diagnosis; not unaided local-model discovery.",
+    "Full-model exact tokens, quality and paired throughput gates are mandatory.",
+    "Cold graph capture costs and graph buffers consume startup time and memory.",
+    "Component timing is diagnostic and variable, not an end-to-end guarantee."
+  ]
+}

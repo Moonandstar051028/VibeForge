@@ -1,1 +1,7 @@
-{"allow_precision_changes": false, "allowed_precisions": []}
+{
+  "allow_precision_changes": false,
+  "allowed_precisions": [],
+  "allowed_surfaces": [
+    "runtime_config", "execution_adapter", "cache_policy", "scheduler", "native_kernel"
+  ]
+}

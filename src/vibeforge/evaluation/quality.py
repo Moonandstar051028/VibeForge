@@ -14,6 +14,26 @@ from vibeforge.storage.atomic import digest, read_json, write_json
 def run_quality(client, settings, folder, context, baseline=None):
     folder = Path(folder).resolve()
     folder.mkdir(parents=True, exist_ok=True)
+    repeats = settings.get("repeats", 1)
+    if repeats > 1:
+        single = {**settings, "repeats": 1}
+        runs = [run_quality(client, single, folder / "runs" / f"{index:04d}", context, baseline)
+                for index in range(1, repeats + 1)]
+        names = set().union(*(run.get("metrics", {}) for run in runs))
+        metrics = {name: min(run["metrics"][name] for run in runs)
+                   for name in names if all(name in run.get("metrics", {}) for run in runs)}
+        statistics = {name: {"minimum": min(run["metrics"][name] for run in runs),
+                             "maximum": max(run["metrics"][name] for run in runs),
+                             "mean": sum(run["metrics"][name] for run in runs) / repeats}
+                      for name in metrics}
+        errors = [f"run_{index}:{error}" for index, run in enumerate(runs, 1)
+                  for error in run.get("errors", [])]
+        report = {"passed": all(run["passed"] for run in runs) and not errors,
+                  "metrics": metrics, "metric_statistics": statistics, "errors": errors,
+                  "repeat_count": repeats, "runs": runs, "evaluator_hash": digest(settings),
+                  "binding": context}
+        write_json(folder / "report.json", report)
+        return report
     request_path, output_path = folder / "request.json", folder / "result.json"
     write_json(request_path, {"engine_url": client.url, **context})
     substitutions = {"url": client.url, "request": str(request_path), "output": str(output_path),
@@ -46,6 +66,7 @@ def run_quality(client, settings, folder, context, baseline=None):
             errors.append("evaluator_failed")
         metrics = result.get("metrics", {})
         if not isinstance(metrics, dict):
+            metrics = {}
             raise ValueError("Quality result metrics must be an object")
         if any(not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) for v in metrics.values()):
             metrics = {}
@@ -68,7 +89,7 @@ def run_quality(client, settings, folder, context, baseline=None):
                     errors.append(f"quality_regression:{name}")
     except (OSError, ValueError, TypeError, AttributeError) as error:
         errors.append(str(error))
-    report = {"passed": not errors, "metrics": metrics, "errors": errors,
+    report = {"passed": not errors, "metrics": metrics, "errors": errors, "repeat_count": 1,
               "evaluator_hash": digest(settings), "binding": context, "process": record}
     write_json(folder / "report.json", report)
     return report

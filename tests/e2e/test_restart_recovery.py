@@ -34,8 +34,10 @@ def test_real_supervisor_crash_during_promotion_recovers_from_disk(paths, projec
         assert state["state"] == "STOPPED"
         assert state["pending_operation"] is None
         assert state["stable_ref"] == initial
-        assert database.iteration("crash", 1)["interrupted"]
-        assert database.iteration("crash", 1)["decision"]["outcome"] == ("accept" if committed else "reject")
+        row = database.iteration("crash", 1)
+        assert row["interrupted"] and row["interrupted_after_decision"]
+        # Admission is immutable; activation/promotion interruption is recorded separately.
+        assert row["decision"]["outcome"] == "accept"
         assert not state["analysis_pending"]
         database.close()
     finally:

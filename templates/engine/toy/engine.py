@@ -6,6 +6,19 @@ import time
 CONFIG = {}
 
 
+class _ToyTokenizer:
+    def __call__(self, text, **kwargs):
+        return {"input_ids": [ord(character) % 128 for character in text] or [1]}
+
+    def apply_chat_template(self, messages, tools=None, tokenize=False, add_generation_prompt=True, **kwargs):
+        value = json.dumps({"messages": messages, "tools": tools or [],
+                            "add_generation_prompt": add_generation_prompt}, ensure_ascii=False)
+        return [ord(character) % 128 for character in value] if tokenize else value
+
+
+TOKENIZER = _ToyTokenizer()
+
+
 def load(config):
     global CONFIG
     CONFIG = config
@@ -42,7 +55,29 @@ def chat(messages, max_new_tokens=128):
 
 def chat_completion(messages, tools=None, max_tokens=None, **kwargs):
     functions = [tool.get("function", tool) for tool in (tools or [])]
+    context = {}
+    for message in messages:
+        if message.get("role") == "user":
+            try:
+                context = json.loads(message.get("content", ""))
+            except (ValueError, TypeError):
+                pass
+    if any("matching this schema" in str(message.get("content", "")) and '"ready"' in str(message.get("content", ""))
+           for message in messages):
+        return {"text": json.dumps({"ready": True, "message": "toy Codex transport ready"}),
+                "tool_calls": [],
+                "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
+    if any(function.get("name") == "report_blocked" for function in functions):
+        return {"text": "", "tool_calls": [{"name": "report_blocked", "arguments": json.dumps({
+            "reason": "Toy transport fixture does not autonomously propose code changes."})}],
+            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
     if any(function.get("name") == "submit_candidate" for function in functions):
+        previous = context.get("previous")
+        reflection = ({"iteration": previous["iteration"], "hypothesis_status": "inconclusive",
+                       "explanation": "Toy transport fixture; performance reasoning is not tested.",
+                       "next_action": "Use the configured integration fixture.",
+                       "evidence_paths": [f"iterations/{previous['iteration']:04d}/decision.json"]}
+                      if previous else None)
         return {
             "text": "",
             "tool_calls": [{
@@ -51,6 +86,7 @@ def chat_completion(messages, tools=None, max_tokens=None, **kwargs):
                     "hypothesis": "Toy backend verified the Qwen-Agent tool-call transport.",
                     "previous_analysis": "The deterministic fixture confirms the local function-call path; it does not evaluate Qwen reasoning.",
                     "summary": "Transport smoke test only.",
+                    "reflection": reflection or {},
                 }),
             }],
             "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},

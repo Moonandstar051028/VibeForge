@@ -22,7 +22,8 @@ def test_loader_selects_model_class_and_quantizer(project, monkeypatch, quant, a
     transformers = SimpleNamespace(
         AutoConfig=SimpleNamespace(from_pretrained=lambda *args, **kwargs: SimpleNamespace(architectures=[architecture])),
         AutoModelForCausalLM=loader("causal"), AutoModelForImageTextToText=loader("image_text"),
-        AutoTokenizer=SimpleNamespace(from_pretrained=lambda *args, **kwargs: object()),
+        AutoTokenizer=SimpleNamespace(from_pretrained=lambda *args, **kwargs: SimpleNamespace(
+            pad_token_id=0, eos_token_id=1, padding_side="right")),
         BitsAndBytesConfig=lambda **kwargs: kwargs,
     )
     torch = SimpleNamespace(float32="fp32", float16="fp16", bfloat16="bf16", set_num_threads=lambda n: None)

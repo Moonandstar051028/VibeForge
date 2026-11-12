@@ -1,0 +1,45 @@
+{
+  "rule_id": "qwen35-recurrent-compile-component",
+  "status": "invalidated",
+  "conditions": {
+    "model_type": "qwen3_5_text",
+    "objective": "throughput",
+    "transformers_version": "5.20.2"
+  },
+  "hypothesis": "Direct or state-cloned torch.compile fusion is not a correctness-preserving candidate for this workload.",
+  "implementation": {
+    "rejected_change": "Direct torch.compile failed cross-layer guards; cloned-state compile fixed guards but failed generation token agreement for the 512-token profile.",
+    "planning_action": "Do not repeat these exact implementations. Investigate preserved eager operation order; CUDA Graph replay is a distinct, not yet full-model validated mechanism."
+  },
+  "validation": {
+    "scope": "full_model_correctness",
+    "passed": false,
+    "campaign_id": "qwen35-codex-iterative-20261112",
+    "iteration": 5,
+    "failed_checks": [
+      "benchmark-concurrent_2-0",
+      "concurrent_request_isolation"
+    ],
+    "inference": "Fusion/reduction arithmetic differences are suspected, not yet established as the sole cause."
+  },
+  "evidence": [
+    {
+      "path": "knowledge/evidence/qwen35-recurrent-compile-component.json"
+    },
+    {
+      "path": "knowledge/evidence/qwen35-recurrent-static-state.json"
+    },
+    {
+      "path": "var/campaigns/qwen35-codex-iterative-20261112/iterations/0005/correctness/report.json"
+    },
+    {
+      "path": "knowledge/evidence/qwen35-recurrent-compile-rule-before-full-validation.json"
+    }
+  ],
+  "limitations": [
+    "Only component correctness/performance validated; full logits, token agreement, quality and paired throughput remain mandatory",
+    "Input shape: sequence 1, 48 value heads, 128 head size; batch 1 and 2",
+    "Compilation has cold-start cost; report it separately",
+    "The initial one-state experiment did not exercise static-address cache guards; revised component test covers 48 marked states and shows small nonzero BF16 differences."
+  ]
+}

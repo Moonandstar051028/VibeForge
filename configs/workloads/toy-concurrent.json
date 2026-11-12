@@ -1,0 +1,21 @@
+{
+  "profiles": [
+    {
+      "id": "serial",
+      "prompts": ["alpha beta", "cache boundary"],
+      "max_new_tokens": 32,
+      "concurrency": 1,
+      "weight": 1
+    },
+    {
+      "id": "concurrent_2",
+      "prompts": ["alpha beta", "cache boundary"],
+      "max_new_tokens": 32,
+      "concurrency": 2,
+      "weight": 1
+    }
+  ],
+  "observation_profile": "serial",
+  "cases": "benchmarks/cases/toy.json",
+  "description": "Deterministic CPU fixture with serial and concurrent profiles; never model performance."
+}

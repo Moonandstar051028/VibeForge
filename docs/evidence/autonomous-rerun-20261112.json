@@ -1,0 +1,79 @@
+{
+  "campaign": "qwen35-autonomous-rerun-20261112",
+  "agent_framework": "codex",
+  "inference": "local Qwen3.5-27B",
+  "knowledge_scope": "current_campaign",
+  "controller_changes_during_run": [],
+  "initial_ref": "v-8f10df1b1a341ce952dd",
+  "stable_ref": "v-8f10df1b1a341ce952dd",
+  "proposals": 5,
+  "completed_experiments": 4,
+  "accepted_candidates": 0,
+  "refinements": 4,
+  "analysis_pending": false,
+  "stop_reason": "max_iterations",
+  "outcome": "Autonomous loop completed with no accepted performance improvement. All four materialized candidates failed correctness; no formal performance gain is reported.",
+  "iterations": [
+    {
+      "iteration": 1,
+      "candidate": "v-0f9d64dec24b0b463aa4",
+      "decision": {
+        "outcome": "reject",
+        "reason": "correctness_failed"
+      },
+      "hypothesis": "Using input_lengths[index] instead of prompt_width to slice generated tokens will fix the output mismatch observed in concurrent request isolation, enabling correct batching and throughput gains."
+    },
+    {
+      "iteration": 2,
+      "candidate": "v-c47fd78f58c74b19b8b3",
+      "decision": {
+        "outcome": "reject",
+        "reason": "correctness_failed"
+      },
+      "hypothesis": "Switching the request scheduler from serialized_lock to microbatch will enable concurrent request batching, increasing throughput for the concurrent_2 profile."
+    },
+    {
+      "iteration": 3,
+      "candidate": null,
+      "decision": {
+        "error": "Candidate changed fixed engine field: model_path",
+        "outcome": "reject",
+        "reason": "execution_failed"
+      },
+      "hypothesis": "Switching from DynamicCache to static cache implementation will reduce decode forward time by eliminating per-token cache allocation overhead, improving throughput by ≥2% without introducing request isolation correctness issues that plagued scheduler changes."
+    },
+    {
+      "iteration": 4,
+      "candidate": "v-850da42470a6684cd547",
+      "decision": {
+        "outcome": "reject",
+        "reason": "correctness_failed"
+      },
+      "hypothesis": "The static cache configuration in engine.json is not being properly instantiated because the engine only passes the string \"static\" to generate() without creating a StaticCache object. By importing and instantiating StaticCache with proper parameters (num_layers, batch_size, max_seq_len, hidden_size), we can enable true static caching which should reduce decode forward time by avoiding dynamic cache overhead."
+    },
+    {
+      "iteration": 5,
+      "candidate": "v-6556297eb7743083fbd5",
+      "decision": {
+        "outcome": "reject",
+        "reason": "correctness_failed"
+      },
+      "hypothesis": "Properly instantiating StaticCache and passing it as the 'cache' argument to MODEL.generate() will reduce decode forward time by eliminating per-token cache allocation overhead that DynamicCache incurs."
+    }
+  ],
+  "raw_evidence": {
+    "var/autonomous/campaigns/qwen35-autonomous-rerun-20261112/progress.json": "7063f8a9480ce9adcb151de5f877eec376460f0a3f95b6995d9f72c3d618fb43",
+    "var/autonomous/campaigns/qwen35-autonomous-rerun-20261112/summary.md": "969b0a52a8f7996bd774c38b3c298b63d1fc68146aa27a1c8efa595e0a51a3a7",
+    "var/autonomous/campaigns/qwen35-autonomous-rerun-20261112/iterations/0002/decision.json": "3ab7b811abb3b2b63aaa34bd52f0008db61fd5b28a4e8ae8024243299bad1a0d",
+    "var/autonomous/campaigns/qwen35-autonomous-rerun-20261112/iterations/0005/decision.json": "3ab7b811abb3b2b63aaa34bd52f0008db61fd5b28a4e8ae8024243299bad1a0d",
+    "var/autonomous/campaigns/qwen35-autonomous-rerun-20261112/iterations/0003/decision.json": "908661a27c01f363cff2695d84fd55028dab34b5470f86d0643e082a52458283",
+    "var/autonomous/campaigns/qwen35-autonomous-rerun-20261112/iterations/0001/decision.json": "3ab7b811abb3b2b63aaa34bd52f0008db61fd5b28a4e8ae8024243299bad1a0d",
+    "var/autonomous/campaigns/qwen35-autonomous-rerun-20261112/iterations/0004/decision.json": "3ab7b811abb3b2b63aaa34bd52f0008db61fd5b28a4e8ae8024243299bad1a0d",
+    "var/autonomous/audits/qwen35-autonomous-rerun-20261112/completion.json": "6b5c2211037f2f9653cad5a0d5ea62fb9231db6a368d9ffd60961136ff376b4a"
+  },
+  "limitations": [
+    "This run does not establish reliable autonomous optimization gains.",
+    "Iteration 3 dropped frozen engine configuration fields; the historical execution_failed classification is preserved.",
+    "Generic navigation, evidence, revision context, analysis-mode and configuration-write repairs were applied only after this run stopped."
+  ]
+}

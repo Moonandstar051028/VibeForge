@@ -1,0 +1,55 @@
+{
+  "name": "toy-scheduler-surface-system-validation",
+  "data_root": "var",
+  "model": "configs/models/toy.json",
+  "hardware": "configs/hardware/cpu.json",
+  "workload": "configs/workloads/toy-concurrent.json",
+  "evaluation": "configs/evaluation/toy.json",
+  "optimization": {
+    "allow_precision_changes": false,
+    "allowed_precisions": [],
+    "allowed_surfaces": ["execution_adapter", "scheduler"]
+  },
+  "agent": {
+    "mode": "scripted",
+    "prompt": "templates/prompts/implementation.md",
+    "actions": [{
+      "hypothesis": "Remove fixed arithmetic overhead and allow independent requests to execute concurrently.",
+      "expected_gain": 0.01,
+      "edits": [
+        {
+          "tool": "replace_text",
+          "arguments": {
+            "path": "engine.py",
+            "old": "work = sum(range(120000))",
+            "new": "work = 119999 * 120000 // 2"
+          }
+        },
+        {
+          "tool": "replace_text",
+          "arguments": {
+            "path": "engine.json",
+            "old": "\"fixture\": true,",
+            "new": "\"fixture\": true,\n  \"request_scheduler\": \"concurrent_requests\","
+          }
+        }
+      ]
+    }]
+  },
+  "engine_template": "templates/engine/toy",
+  "runtime_python": "python3",
+  "probe": {
+    "enabled": true,
+    "repeats": 1,
+    "warmup": 0,
+    "timeout_seconds": 60,
+    "max_attempts": 1
+  },
+  "budget": {
+    "max_iterations": 1,
+    "max_proposals": 1,
+    "max_seconds": 180,
+    "agent_seconds": 30,
+    "max_failures": 2
+  }
+}

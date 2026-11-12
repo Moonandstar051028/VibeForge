@@ -1,0 +1,101 @@
+{
+  "name": "qwen35-27b-microbatch-mechanism-validation",
+  "data_root": "var",
+  "model": {
+    "name": "Qwen3.5-27B",
+    "path": "/home/data/yxy/agent-to-inferrence/weight/Qwen3.5-27B",
+    "dtype": "bfloat16",
+    "device": "cuda:0",
+    "reserve_gib": 6,
+    "quantization": "bnb-nf4",
+    "max_context": 32768,
+    "scope": "text_only"
+  },
+  "hardware": "configs/hardware/cuda.json",
+  "workload": "configs/workloads/representative.json",
+  "evaluation": {
+    "repeats": 3,
+    "warmup": 1,
+    "min_gain": 0.02,
+    "confidence": 0.95,
+    "max_retests": 0,
+    "reference_repeats": 2,
+    "min_reference_consensus": 1.0,
+    "atol": 0.01,
+    "rtol": 0.01,
+    "max_normalized_rms": 0.02,
+    "exact_tokens": true,
+    "require_exclusive_gpu": true,
+    "max_temperature_c": 80,
+    "max_profile_regression": 0.03,
+    "quality": {
+      "command": [
+        "{python}", "{project}/scripts/evaluation/quality_cases.py",
+        "--request", "{request}", "--output", "{output}",
+        "--cases", "{project}/benchmarks/cases/task-quality-core.json"
+      ],
+      "files": [
+        "scripts/evaluation/quality_cases.py",
+        "benchmarks/cases/task-quality-core.json"
+      ],
+      "repeats": 1,
+      "timeout_seconds": 300,
+      "min_scores": {"accuracy": 0.8},
+      "max_regressions": {"accuracy": 0.05}
+    }
+  },
+  "agent": {
+    "mode": "scripted",
+    "prompt": "templates/prompts/implementation.md",
+    "actions": [{
+      "hypothesis": "Static whole-request microbatching will improve the measured concurrent workload without changing deterministic outputs.",
+      "edits": [{
+        "tool": "replace_text",
+        "arguments": {
+          "path": "engine.json",
+          "old": "\"use_cache\": true,",
+          "new": "\"use_cache\": true,\n  \"request_scheduler\": \"microbatch\",\n  \"microbatch_max_size\": 2,\n  \"microbatch_wait_ms\": 4,"
+        }
+      }]
+    }]
+  },
+  "engine_template": "templates/engine/transformers",
+  "engine": "configs/engines/transformers.json",
+  "precision": "configs/precision/bnb-nf4.json",
+  "requirements": "configs/requirements/throughput.json",
+  "optimization": "configs/optimization/fixed.json",
+  "runtime_python": "/home/yxy/agent-to-inferrence/.venv/bin/python",
+  "inference_pythonpath": ["var/cache/inference-packages"],
+  "startup_timeout": 900,
+  "request_timeout": 600,
+  "budget": {
+    "max_iterations": 1,
+    "max_seconds": 14400,
+    "agent_seconds": 60,
+    "max_failures": 2,
+    "max_proposals": 1,
+    "max_stalled_attempts": 1,
+    "max_candidate_failures": 2
+  },
+  "profiling": {
+    "coverage": "all",
+    "max_new_tokens": 32,
+    "max_profiles_per_session": 2,
+    "max_matrix_profiles": 10,
+    "max_age_seconds": 3600
+  },
+  "telemetry": {
+    "enabled": true,
+    "capture_agent_requests": false,
+    "max_session_requests": 32,
+    "retention_seconds": 3600
+  },
+  "probe": {
+    "enabled": true,
+    "repeats": 1,
+    "warmup": 0,
+    "timeout_seconds": 900,
+    "max_attempts": 1
+  },
+  "refinement": {"enabled": false, "max_revisions": 0, "timeout_seconds": 60}
+}

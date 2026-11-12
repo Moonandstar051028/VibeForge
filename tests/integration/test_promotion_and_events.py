@@ -53,6 +53,18 @@ def test_recovery_aborts_uncommitted_target(paths):
     database.close()
 
 
+def test_recovery_preserves_terminal_decision_recorded_before_interrupt(paths):
+    database = Database(paths.data / "state/controller.sqlite3")
+    database.put("terminal", {"state": "ROLLING_BACK", "stable_ref": "v0"})
+    database.iteration("terminal", 1, {"complete": False,
+        "decision": {"outcome": "reject", "reason": "correctness_failed"}})
+    recover(database, paths, "terminal")
+    row = database.iteration("terminal", 1)
+    assert row["decision"]["reason"] == "correctness_failed"
+    assert row["interrupted_after_decision"] and row["interrupted"]
+    database.close()
+
+
 def test_immutable_release_detects_changed_code(paths, project):
     workspace = create_workspace(project / "templates/engine/toy", paths.workspace("c", 0))
     (workspace / 'adapter').mkdir()

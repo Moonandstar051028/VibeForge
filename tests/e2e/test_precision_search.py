@@ -18,7 +18,8 @@ def test_precision_search_is_gated_and_restores_or_promotes(paths, project, toy_
         quality["command"].append("--reject-float32")
     config["evaluation"].update(correctness_mode="approximate", quality=quality, max_retests=0)
     config["workload"]["concurrency"] = 2
-    candidate = {"backend": "toy", "fixture": True, "device": "cpu", "model_loader": "auto", **precision_fields(precision)}
+    candidate = read_json(project / "templates/engine/toy/engine.json")
+    candidate.update(device="cpu", model_loader="auto", **precision_fields(precision))
     config["agent"]["actions"] = [{"hypothesis": "Fixture tests a declared precision change with equivalent arithmetic.", "edits": [
         {"tool": "write_file", "arguments": {"path": "engine.json", "content": __import__('json').dumps(candidate)}},
         {"tool": "replace_text", "arguments": {"path": "engine.py", "old": "work = sum(range(120000))",
@@ -40,7 +41,7 @@ def test_precision_search_is_gated_and_restores_or_promotes(paths, project, toy_
             assert state["stable_ref"] == state["initial_ref"]
         else:
             assert state["stable_ref"] == row["candidate"]
-            context = read_json(paths.campaign("precision-search") / "final-analysis/context.json")
+            context = read_json(paths.campaign("precision-search") / "final-analysis/0001/context.json")
             assert context["precision"] == precision
             assert context["profile_hash"] == row["profile_hash"] != state["profile_hash"]
         quality_report = read_json(paths.campaign("precision-search") / "iterations/0001/quality/report.json")

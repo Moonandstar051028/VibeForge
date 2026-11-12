@@ -1,0 +1,46 @@
+{
+  "rule_id": "qwen35-recurrent-compile-component",
+  "status": "local_validated",
+  "conditions": {
+    "model_type": "qwen3_5_text",
+    "objective": "throughput",
+    "transformers_version": "5.20.2"
+  },
+  "hypothesis": "Fuse the single-token recurrent gated delta fallback with torch.compile to reduce many small GPU launches. Component-only result; validate end-to-end.",
+  "implementation": {
+    "scope": "component_only",
+    "recipe": "In candidate load(), after loading MODEL, import inspect and transformers.models.qwen3_5.modeling_qwen3_5 as model_impl. Set original = model_impl.torch_recurrent_gated_delta_rule and fused = torch.compile(inspect.unwrap(original), fullgraph=True, dynamic=False). Define an ordinary Python wrapper with the same arguments: query, key, value, g, beta, initial_state=None, output_final_state=False, use_qk_l2norm_in_kernel=False, **kwargs. OUTSIDE the compiled region, clone initial_state if not None, then call fused with that copy and all other original arguments unchanged. Assign model_impl.torch_recurrent_gated_delta_rule to this wrapper. The clone avoids fixed-address Dynamo guards across the 48 cache states. Do not compile the outer wrapper, raise global recompile limits, enable CUDA graphs, alter precision, prefill or output semantics. Read the actual helper before editing; execution_adapter authorizes this source change.",
+    "prerequisites": [
+      "CUDA Qwen3.5 model",
+      "torch.compile and Triton installed",
+      "Writable managed compiler cache"
+    ],
+    "previous_direct_recipe": "Directly replacing the helper with torch.compile failed full-model execution in iteration 2 (FailOnRecompileLimitHit). That exact implementation is invalid; the state-cloning wrapper is a distinct candidate.",
+    "example_inside_load": "    import inspect\n    import transformers.models.qwen3_5.modeling_qwen3_5 as model_impl\n    original = model_impl.torch_recurrent_gated_delta_rule\n    fused = torch.compile(inspect.unwrap(original), fullgraph=True, dynamic=False)\n    def reusable_delta(query, key, value, g, beta, initial_state=None,\n                       output_final_state=False, use_qk_l2norm_in_kernel=False, **kwargs):\n        state = initial_state.clone() if initial_state is not None else None\n        return fused(query, key, value, g, beta, initial_state=state,\n                     output_final_state=output_final_state,\n                     use_qk_l2norm_in_kernel=use_qk_l2norm_in_kernel, **kwargs)\n    model_impl.torch_recurrent_gated_delta_rule = reusable_delta\n"
+  },
+  "validation": {
+    "scope": "component_only",
+    "cloned_state_component_speedup_range": [
+      2.4296370205324744,
+      2.4544239398159626
+    ],
+    "distinct_marked_states": 48,
+    "bf16_output_max_absolute_error": 0.0009765625,
+    "fp32_state_max_absolute_error": 9.5367431640625e-07,
+    "end_to_end": "unverified; direct compilation rejected, revised wrapper needs full gates"
+  },
+  "evidence": [
+    {
+      "path": "knowledge/evidence/qwen35-recurrent-compile-component.json"
+    },
+    {
+      "path": "knowledge/evidence/qwen35-recurrent-static-state.json"
+    }
+  ],
+  "limitations": [
+    "Only component correctness/performance validated; full logits, token agreement, quality and paired throughput remain mandatory",
+    "Input shape: sequence 1, 48 value heads, 128 head size; batch 1 and 2",
+    "Compilation has cold-start cost; report it separately",
+    "The initial one-state experiment did not exercise static-address cache guards; revised component test covers 48 marked states and shows small nonzero BF16 differences."
+  ]
+}

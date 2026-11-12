@@ -5,7 +5,7 @@ from vibeforge.evaluation.correctness import compare_values
 
 
 def rows(values, valid=True, latency=0.1):
-    return [{"throughput": value, "valid": valid, "requests": [{"ttft_seconds": latency}]} for value in values]
+    return [{"throughput": value, "valid": valid, "requests": [{"ttft_seconds": latency} for _ in range(100)]} for value in values]
 
 
 @pytest.mark.parametrize("baseline,candidate,outcome,reason", [
@@ -26,6 +26,16 @@ def test_incorrect_or_contaminated_candidate_never_promotes():
 
 def test_protection_metric_overrides_throughput():
     result = decide({"passed": True}, rows([10, 10]), rows([20, 20], latency=5),
+                    {"min_gain": 0, "absolute_limits": {"ttft_seconds": 1}})
+    assert result.reason == "protection_failed:ttft_seconds"
+
+
+def test_candidate_reported_fast_ttft_cannot_replace_missing_host_measurement():
+    candidates = rows([20, 20], latency=0.001)
+    for sample in candidates:
+        sample["requests"][0]["backend_metrics"] = {"ttft_seconds": 0.001}
+        sample["requests"][0]["host_observation"] = {"ttft_seconds": None}
+    result = decide({"passed": True}, rows([10, 10]), candidates,
                     {"min_gain": 0, "absolute_limits": {"ttft_seconds": 1}})
     assert result.reason == "protection_failed:ttft_seconds"
 

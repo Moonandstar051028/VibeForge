@@ -1,0 +1,35 @@
+{
+  "kind": "component_microbenchmark",
+  "records": [
+    {
+      "batch": 1,
+      "max_abs_errors": [
+        0.00048828125,
+        9.5367431640625e-07
+      ],
+      "seconds": [
+        0.00023371318355202674,
+        0.00010079381056129932
+      ],
+      "speedup": 2.3187255472387407
+    },
+    {
+      "batch": 2,
+      "max_abs_errors": [
+        0.0009765625,
+        9.5367431640625e-07
+      ],
+      "seconds": [
+        0.00023430646630004048,
+        9.925094898790121e-05
+      ],
+      "speedup": 2.3607478688047876
+    }
+  ],
+  "seed": 123,
+  "iterations": 200,
+  "clone_static_state": true,
+  "preserve_eager_rounding": true,
+  "distinct_marked_states": 48,
+  "end_to_end": "unverified"
+}

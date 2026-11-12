@@ -1,0 +1,48 @@
+{
+  "name": "toy-probe-refinement-system-validation",
+  "data_root": "var",
+  "model": "configs/models/toy.json",
+  "hardware": "configs/hardware/cpu.json",
+  "workload": "configs/workloads/toy.json",
+  "evaluation": "configs/evaluation/toy.json",
+  "agent": {
+    "mode": "scripted",
+    "prompt": "templates/prompts/implementation.md",
+    "actions": [{
+      "hypothesis": "Deliberately perturb logits to trigger the quick correctness probe.",
+      "edits": [{
+        "tool": "replace_text",
+        "arguments": {"path": "engine.py", "old": "seed = sum(", "new": "seed = 1 + sum("}
+      }],
+      "revision": {
+        "hypothesis": "Restore logits and remove the measured fixed arithmetic overhead.",
+        "edits": [
+          {"tool": "replace_text", "arguments": {
+            "path": "engine.py", "old": "seed = 1 + sum(", "new": "seed = sum("
+          }},
+          {"tool": "replace_text", "arguments": {
+            "path": "engine.py", "old": "work = sum(range(120000))",
+            "new": "work = 119999 * 120000 // 2"
+          }}
+        ]
+      }
+    }]
+  },
+  "engine_template": "templates/engine/toy",
+  "runtime_python": "python3",
+  "probe": {
+    "enabled": true,
+    "repeats": 1,
+    "warmup": 0,
+    "timeout_seconds": 60,
+    "max_attempts": 2
+  },
+  "refinement": {"enabled": true, "max_revisions": 1, "timeout_seconds": 60},
+  "budget": {
+    "max_iterations": 1,
+    "max_proposals": 1,
+    "max_seconds": 180,
+    "agent_seconds": 30,
+    "max_failures": 2
+  }
+}

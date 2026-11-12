@@ -63,7 +63,7 @@ def precision_fields(precision):
 
 
 def validate_candidate_runtime(parent, candidate, campaign):
-    for key in ("backend", "model_path", "device", "max_context", "model_loader"):
+    for key in ("backend", "model_path", "device", "max_context", "model_loader", "thinking"):
         if parent.get(key) != candidate.get(key):
             raise ValueError(f"Candidate changed fixed engine field: {key}")
     precision = engine_precision(candidate)
@@ -75,6 +75,12 @@ def validate_candidate_runtime(parent, candidate, campaign):
     if legacy != precision["quantization"]:
         raise ValueError("Candidate quantization disagrees with precision contract")
     previous = engine_precision(parent)
+    scheduler = candidate.get("request_scheduler", "serialized_lock")
+    if scheduler not in {"serialized_lock", "concurrent_requests", "microbatch"}:
+        raise ValueError("Candidate request_scheduler must be serialized_lock, concurrent_requests or microbatch")
+    if (scheduler != parent.get("request_scheduler", "serialized_lock")
+            and "scheduler" not in campaign.get("optimization", {}).get("allowed_surfaces", [])):
+        raise ValueError("Candidate scheduler change was not authorized by this campaign")
     if precision != previous:
         policy = campaign.get("optimization", {})
         if not policy.get("allow_precision_changes"):

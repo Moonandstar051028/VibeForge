@@ -22,7 +22,7 @@ def parser():
     result.add_argument("--data-root")
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("capabilities")
-    for name in ("profile", "run", "resume", "status", "stop", "events", "report"):
+    for name in ("profile", "run", "resume", "status", "stop", "events", "report", "compare"):
         command = commands.add_parser(name)
         command.add_argument("campaign", nargs="?")
         if name in ("profile", "run"):
@@ -80,6 +80,11 @@ def main(argv=None):
         state = launch(paths, campaign_id, config, resume=args.command == "resume")
         print(json.dumps(state, indent=2, ensure_ascii=False))
         return 0 if state["state"] == "STOPPED" else 2
+    if args.command == "compare":
+        from vibeforge.controller.comparison import compare_initial
+        record = compare_initial(paths, campaign_id)
+        print(json.dumps({key: record[key] for key in ("initial_ref", "stable_ref", "decision", "evidence_path")}, indent=2))
+        return 0 if record["decision"]["outcome"] != "invalid" else 2
     database = Database(paths.data / "state" / "controller.sqlite3")
     try:
         if args.command == "status":

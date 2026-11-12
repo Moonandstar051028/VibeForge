@@ -1,0 +1,37 @@
+{
+  "campaign": "qwen35-autonomous-20261112",
+  "agent_framework": "codex",
+  "inference": "local Qwen3.5-27B",
+  "knowledge_scope": "current_campaign",
+  "controller_changes_during_run": [],
+  "initial_ref": "v-8f10df1b1a341ce952dd",
+  "stable_ref": "v-8f10df1b1a341ce952dd",
+  "proposals": 4,
+  "completed_experiments": 4,
+  "accepted_candidates": 0,
+  "refinements": 1,
+  "analysis_pending": false,
+  "stop_reason": "max_iterations",
+  "outcome": "Autonomous loop completed; no independently accepted performance improvement.",
+  "limitations": [
+    "Not evidence of reliable autonomous optimization gains.",
+    "Fourth candidate edited an inactive microbatch path; measured difference is not attributable to that edit.",
+    "Generic feedback/precheck fixes after the run have unit/regression verification only."
+  ],
+  "raw_evidence": {
+    "var/autonomous/campaigns/qwen35-autonomous-20261112/progress.json": "d0d70c492962a2a478077e5c8dcb4e170c4fe09216a33a04667302f8d0e39fdc",
+    "var/autonomous/campaigns/qwen35-autonomous-20261112/iterations/0001/decision.json": "3ab7b811abb3b2b63aaa34bd52f0008db61fd5b28a4e8ae8024243299bad1a0d",
+    "var/autonomous/campaigns/qwen35-autonomous-20261112/iterations/0002/decision.json": "3ab7b811abb3b2b63aaa34bd52f0008db61fd5b28a4e8ae8024243299bad1a0d",
+    "var/autonomous/campaigns/qwen35-autonomous-20261112/iterations/0003/decision.json": "3ab7b811abb3b2b63aaa34bd52f0008db61fd5b28a4e8ae8024243299bad1a0d",
+    "var/autonomous/campaigns/qwen35-autonomous-20261112/iterations/0004/decision.json": "c32a3cf81a3700e3b8810bfb2167cd673eaf00cb88709fb977482919ddcafe33"
+  },
+  "final_decision": {
+    "outcome": "reject",
+    "reason": "no_significant_gain",
+    "gain": 0.014872624568224246,
+    "lower": -0.0002728762662882911,
+    "upper": 0.029246100461487325,
+    "objective": "throughput",
+    "direction": "maximize"
+  }
+}

@@ -1,0 +1,11 @@
+Optimize the frozen objective using only the supplied measurements, candidate source, loaded implementation, and this campaign's own experiment history. Discover the hypothesis yourself. No external recipe or prior campaign is supplied.
+
+Read the bounded brief (already inline when it fits), identify one measured bottleneck, and inspect only the relevant source or evidence. Distinguish an observation from a causal hypothesis. Use the exact measured metric keys and allowed history references. Do not invent measurements or expected benefits without explaining their basis.
+
+Use VibeForge MCP tools: read_candidate for source, search_candidate to locate literal source text, read_implementation for loaded library functions, read_evidence for recorded results, replace_candidate for an exact edit, write_candidate for a new helper or replacement file, and check_candidate for Python or JSON syntax. The brief contains actual candidate file names and Python definition offsets. Shell tools are disabled in this isolated campaign. All edits must remain within the candidate workspace and authorized modification surfaces. Do not modify the model identity, precision, workloads, evaluator, gates, or evidence.
+
+In an optimization session, choose one falsifiable hypothesis, implement it, check edited Python files, and call record_result. The host independently builds and validates the candidate, runs a bounded probe and revision if needed, and then measures correctness, task quality and paired performance. Only the host's decision establishes improvement. A rejected candidate is not the stable engine. Read the previous failure evidence and distinguish a different implementation from an exact repeat.
+
+In an analysis-only session, review the assigned previous experiment and submit its evidence-bound reflection without editing or proposing a new candidate. A failed measurement is inconclusive about performance.
+
+Complete implementation and submission within the stated budget. If no justified edit can be completed, assess the authorized modification surfaces and submit blocked=true with a concrete explanation. Do not end with a plan to do the work later. Call record_result exactly once and stop after it succeeds.

@@ -1,0 +1,44 @@
+{
+  "rule_id": "qwen35-27b-nf4-static-cache-invalidated-v1",
+  "status": "invalidated",
+  "conditions": {
+    "profile_hash": "1583e0128314b43238806668593c616611eeaed5c59f54fa3e74ae2aaf4ac341",
+    "precision": {
+      "weight_dtype": "int4",
+      "compute_dtype": "bfloat16",
+      "quantization": "bnb-nf4",
+      "kv_cache_dtype": "auto",
+      "accumulation_dtype": "auto",
+      "double_quant": true
+    },
+    "device": "cuda:0",
+    "objective": "throughput"
+  },
+  "implementation": {
+    "rejected_change": "Set cache_implementation=static on the Transformers generate path.",
+    "planning_action": "Do not repeat DynamicCache-to-StaticCache for this exact profile. Explore a materially different scheduler, execution path, cache mechanism, or kernel change.",
+    "retry_precondition": "Retry only with a different cache implementation or a demonstrated fix for request isolation and the measured decode regression."
+  },
+  "validation": {
+    "campaign_id": "qwen35-27b-v4-postfix-20261110",
+    "candidate": "v-6c477c6e984410ce4159",
+    "result": "candidate_probe_failed",
+    "correctness_precheck_passed": false,
+    "failed_checks": [
+      "sequential_request_isolation",
+      "concurrent_request_isolation"
+    ],
+    "decode_forward_seconds_before": 3.244497634887696,
+    "decode_forward_seconds_after": 3.5147651443481447,
+    "decode_improvement_pct": -8.330026397747803,
+    "formal_ab_run": false,
+    "scope": "The quick probe is sufficient to reject this candidate, but does not establish performance for other profiles or cache implementations."
+  },
+  "evidence": [
+    {
+      "profile_hash": "1583e0128314b43238806668593c616611eeaed5c59f54fa3e74ae2aaf4ac341",
+      "campaign_id": "qwen35-27b-v4-postfix-20261110",
+      "path": "var/campaigns/qwen35-27b-v4-postfix-20261110/iterations/0004/probe/0000/probe.json"
+    }
+  ]
+}

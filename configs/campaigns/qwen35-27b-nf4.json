@@ -1,0 +1,101 @@
+{
+  "name": "qwen35-27b-nf4-representative",
+  "data_root": "var",
+  "model": {
+    "name": "Qwen3.5-27B",
+    "path": "/home/data/yxy/agent-to-inferrence/weight/Qwen3.5-27B",
+    "dtype": "bfloat16",
+    "device": "cuda:0",
+    "reserve_gib": 6,
+    "quantization": "bnb-nf4",
+    "max_context": 32768,
+    "scope": "text_only"
+  },
+  "hardware": "configs/hardware/cuda.json",
+  "workload": "configs/workloads/representative.json",
+  "evaluation": {
+    "repeats": 5,
+    "warmup": 1,
+    "min_gain": 0.02,
+    "confidence": 0.95,
+    "max_retests": 1,
+    "reference_repeats": 3,
+    "min_reference_consensus": 0.6666666666666666,
+    "atol": 0.01,
+    "rtol": 0.01,
+    "max_normalized_rms": 0.02,
+    "exact_tokens": true,
+    "require_exclusive_gpu": true,
+    "require_continuous_device_telemetry": true,
+    "device_sample_interval": 1.0,
+    "min_tail_requests": 100,
+    "max_temperature_c": 80,
+    "max_profile_regression": 0.03,
+    "quality": {
+      "command": [
+        "{python}",
+        "{project}/scripts/evaluation/quality_cases.py",
+        "--request",
+        "{request}",
+        "--output",
+        "{output}",
+        "--cases",
+        "{project}/benchmarks/cases/task-quality-core.json"
+      ],
+      "files": [
+        "scripts/evaluation/quality_cases.py",
+        "benchmarks/cases/task-quality-core.json"
+      ],
+      "repeats": 3,
+      "timeout_seconds": 300,
+      "min_scores": {"accuracy": 0.8},
+      "max_regressions": {"accuracy": 0.05}
+    }
+  },
+  "agent": {
+    "mode": "local",
+    "framework": "qwen-agent",
+    "max_turns": 20,
+    "max_new_tokens": 4096,
+    "timeout_seconds": 900,
+    "request_timeout": 600,
+    "thinking": {
+      "enabled": true,
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 20,
+      "min_p": 0.0
+    },
+    "prompt": "templates/prompts/implementation.md"
+  },
+  "engine_template": "templates/engine/transformers",
+  "engine": "configs/engines/transformers.json",
+  "precision": "configs/precision/bnb-nf4.json",
+  "requirements": "configs/requirements/throughput.json",
+  "optimization": "configs/optimization/fixed.json",
+  "runtime_python": "/home/yxy/agent-to-inferrence/.venv/bin/python",
+  "inference_pythonpath": [
+    "var/cache/inference-packages"
+  ],
+  "startup_timeout": 900,
+  "request_timeout": 600,
+  "budget": {
+    "max_iterations": 20,
+    "max_seconds": 86400,
+    "agent_seconds": 900,
+    "max_failures": 3,
+    "max_proposals": 30,
+    "max_stalled_attempts": 3,
+    "max_candidate_failures": 5
+  },
+  "profiling": {
+    "coverage": "all",
+    "max_new_tokens": 32,
+    "max_profiles_per_session": 2,
+    "max_matrix_profiles": 10,
+    "max_age_seconds": 3600
+  },
+  "telemetry": {"enabled": true, "capture_agent_requests": true, "max_session_requests": 256, "retention_seconds": 3600},
+  "probe": {"enabled": true, "repeats": 1, "warmup": 0, "timeout_seconds": 900, "max_attempts": 2},
+  "refinement": {"enabled": true, "max_revisions": 1, "timeout_seconds": 900}
+}

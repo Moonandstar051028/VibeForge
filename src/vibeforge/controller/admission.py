@@ -13,6 +13,26 @@ def decide(correctness, baseline, candidate, protocol):
         return Decision("invalid", "incomplete_measurements")
     if not all(row["valid"] for row in baseline + candidate):
         return Decision("invalid", "contaminated_measurements")
+    required = {protocol.get("objective", "throughput"), *protocol.get("limits", {})}
+    if any("p95" in name or "p99" in name for name in required) or protocol.get("absolute_limits"):
+        minimum = protocol.get("min_tail_requests", 100)
+        for row in baseline + candidate:
+            profiles = list(row.get("profile_records", {}).values()) or [row]
+            if any(len(profile.get("requests", [])) < minimum for profile in profiles):
+                return Decision("invalid", "insufficient_tail_samples")
+    if any("profile_records" in row for row in baseline + candidate):
+        names = set(baseline[0].get("profile_records", {}))
+        if not names or any(set(row.get("profile_records", {})) != names for row in baseline + candidate):
+            return Decision("invalid", "workload_profile_coverage_mismatch")
+        if any(row.get("profile_weights") != baseline[0].get("profile_weights") for row in baseline + candidate):
+            return Decision("invalid", "workload_profile_weights_mismatch")
+        for name in sorted(names):
+            interval = paired_gain([row["profile_records"][name]["throughput"] for row in baseline],
+                                   [row["profile_records"][name]["throughput"] for row in candidate],
+                                   protocol.get("confidence", .95))
+            if interval["lower"] < -protocol.get("max_profile_regression", .03):
+                outcome = "reject" if interval["upper"] < -protocol.get("max_profile_regression", .03) else "invalid"
+                return Decision(outcome, "profile_regression:" + name if outcome == "reject" else "profile_regression_not_excluded:" + name)
     objective = protocol.get("objective", "throughput")
     direction = OBJECTIVES[objective]
     def metric(row, name):
@@ -26,7 +46,7 @@ def decide(correctness, baseline, candidate, protocol):
         return Decision("invalid", "objective_metric_unavailable", objective=objective, direction=direction)
     interval = paired_gain(a, b, protocol.get("confidence", 0.95), direction=direction)
     for name, limit in protocol.get("absolute_limits", {}).items():
-        values = [request.get(name, request.get("backend_metrics", {}).get(name))
+        values = [(request.get("host_observation") or {}).get(name)
                   for row in candidate for request in row["requests"]]
         if any(v is None for v in values) or not values or percentile(values, 0.95) > limit:
             return Decision("reject", f"protection_failed:{name}", **{k: interval[k] for k in ("gain", "lower", "upper")})

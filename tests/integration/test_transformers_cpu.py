@@ -19,3 +19,6 @@ def test_real_transformers_two_architectures_two_precisions(project, tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     report = read_json(tmp_path / "probe/report.json")
     assert report["passed"] and len(report["results"]) == 4
+    assert report["microbatch"]["passed"]
+    assert report["microbatch"]["observed_batch_sizes"] == [2, 2]
+    assert report["microbatch"]["outputs_match_serial"]

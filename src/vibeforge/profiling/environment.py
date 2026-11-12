@@ -13,7 +13,10 @@ def inspect_environment(python=None, extra_paths=()):
         script = (
             "import importlib.metadata as m,json,sys;"
             "names=['torch','transformers','safetensors','accelerate','bitsandbytes'];"
-            "found={p.metadata['Name'].lower():p.version for p in m.distributions()};"
+            "found={}\n"
+            "for p in m.distributions():\n"
+            " name=p.metadata.get('Name','').lower()\n"
+            " if name: found.setdefault(name,p.version)\n"
             "result={'python':sys.version,'packages':{**found,**{n:found.get(n) for n in names}}};\n"
             "try:\n"
             " import torch\n"

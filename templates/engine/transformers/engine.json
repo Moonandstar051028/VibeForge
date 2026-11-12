@@ -4,7 +4,10 @@
   "dtype": "bfloat16",
   "device": "cuda",
   "use_cache": true,
+  "microbatch_max_size": 4,
+  "microbatch_wait_ms": 4,
   "max_context": 4096,
   "max_new_tokens": 1024,
+  "thinking": {"enabled": false},
   "num_threads": 8
 }

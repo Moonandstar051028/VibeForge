@@ -1,4 +1,6 @@
 {
   "backend": "toy",
-  "fixture": true
+  "fixture": true,
+  "max_context": 32768,
+  "thinking": {"enabled": false}
 }

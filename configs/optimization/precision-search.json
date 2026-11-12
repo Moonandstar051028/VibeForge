@@ -1,1 +1,9 @@
-{"allow_precision_changes": true, "allowed_precisions": ["configs/precision/bf16.json", "configs/precision/fp16.json", "configs/precision/bnb-nf4.json"]}
+{
+  "allow_precision_changes": true,
+  "allowed_precisions": [
+    "configs/precision/bf16.json", "configs/precision/fp16.json", "configs/precision/bnb-nf4.json"
+  ],
+  "allowed_surfaces": [
+    "runtime_config", "execution_adapter", "cache_policy", "scheduler", "native_kernel"
+  ]
+}

@@ -45,11 +45,35 @@ def test_precision_changes_need_authorization_and_allowlist(toy_config):
         validate_candidate_runtime(parent, child, toy_config)
 
 
+def test_scheduler_changes_need_surface_authorization(toy_config):
+    parent = {"backend": "toy", "request_scheduler": "serialized_lock",
+              **precision_fields(toy_config["precision"])}
+    child = {**parent, "request_scheduler": "concurrent_requests"}
+    toy_config["optimization"]["allowed_surfaces"] = ["execution_adapter"]
+    with pytest.raises(ValueError, match="scheduler change"):
+        validate_candidate_runtime(parent, child, toy_config)
+    toy_config["optimization"]["allowed_surfaces"].append("scheduler")
+    assert validate_candidate_runtime(parent, child, toy_config) == child["precision"]
+    child["request_scheduler"] = "continuous_batching"
+    with pytest.raises(ValueError, match="serialized_lock, concurrent_requests or microbatch"):
+        validate_candidate_runtime(parent, child, toy_config)
+
+
 def test_approximation_requires_independent_quality_gate(project, tmp_path, toy_config):
     toy_config["evaluation"]["correctness_mode"] = "approximate"
     path = tmp_path / "campaign.json"
     write_json(path, toy_config)
     with pytest.raises(ValueError, match="quality evaluator"):
+        load_config(path, project)
+
+
+def test_production_self_reference_requires_independent_quality(project, tmp_path):
+    config = load_config(project / "configs/campaigns/qwen36-35b.json", project)
+    config["evaluation"].pop("quality")
+    config.pop("config_hash", None)
+    path = tmp_path / "campaign.json"
+    write_json(path, config)
+    with pytest.raises(ValueError, match="self-generated regression reference"):
         load_config(path, project)
 
 
@@ -103,7 +127,7 @@ def test_profile_separates_precision_and_ignores_free_memory(monkeypatch, toy_co
 
 def test_latency_objective_and_resource_guard_are_independent():
     def row(latency, rss=100):
-        return {"valid": True, "requests": [], "metrics": {"latency_p95_seconds": latency, "peak_rss_bytes": rss}}
+        return {"valid": True, "requests": [{} for _ in range(100)], "metrics": {"latency_p95_seconds": latency, "peak_rss_bytes": rss}}
     protocol = {"objective": "latency_p95_seconds", "min_gain": .02, "limits": {"peak_rss_bytes": 200}}
     baseline, candidate = [row(2)] * 5, [row(1)] * 5
     result = decide({"passed": True}, baseline, candidate, protocol)

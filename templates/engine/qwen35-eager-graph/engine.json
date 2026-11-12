@@ -1,0 +1,29 @@
+{
+  "backend": "transformers",
+  "model_path": "/home/data/yxy/agent-to-inferrence/weight/Qwen3.5-27B",
+  "dtype": "bfloat16",
+  "device": "cuda:0",
+  "use_cache": true,
+  "microbatch_max_size": 4,
+  "microbatch_wait_ms": 4,
+  "max_context": 32768,
+  "max_new_tokens": 4096,
+  "thinking": {
+    "enabled": true,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0.0
+  },
+  "num_threads": 8,
+  "precision": {
+    "weight_dtype": "int4",
+    "compute_dtype": "bfloat16",
+    "quantization": "bnb-nf4",
+    "kv_cache_dtype": "auto",
+    "accumulation_dtype": "auto",
+    "double_quant": true
+  },
+  "quantization": "bnb-nf4",
+  "model_loader": "auto"
+}
