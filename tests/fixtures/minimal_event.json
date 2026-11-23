@@ -1,4 +1,0 @@
-{
-  "campaign_id": "fixture", "event_type": "engine_started",
-  "payload": {"version": "fixture-v0"}
-}

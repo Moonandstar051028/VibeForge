@@ -1,0 +1,228 @@
+{
+  "model": {
+    "name": "Qwen3-Coder-30B-A3B-Instruct",
+    "path": "/home/yxy/weight/Qwen3-Coder-30B-A3B-Instruct",
+    "dtype": "bfloat16",
+    "device": "cuda:0",
+    "reserve_gib": 6,
+    "quantization": null,
+    "max_context": 32768,
+    "scope": "text_only",
+    "native_max_context": 262144,
+    "context_limit_source": "campaign",
+    "context_limit_note": "Fresh continuous Coder optimization campaign; exact context accounting and no cross-run history."
+  },
+  "hardware": {
+    "device": "cuda:0",
+    "name_contains": "A800",
+    "description": "Dedicated visible NVIDIA A800 80GB PCIe; launch with CUDA_VISIBLE_DEVICES=1 and CUDA_DEVICE_ORDER=PCI_BUS_ID."
+  },
+  "precision": {
+    "weight_dtype": "bfloat16",
+    "compute_dtype": "bfloat16",
+    "quantization": "none",
+    "kv_cache_dtype": "auto",
+    "accumulation_dtype": "auto",
+    "double_quant": true
+  },
+  "workload": {
+    "profiles": [
+      {
+        "id": "interactive",
+        "prompts": [
+          "You are reviewing an inference optimization experiment. Read the following recorded tasks and configuration records. Identify the likely bottleneck and give a concrete validation plan.\nRecord 0: def decode_step_0(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 1: def decode_step_1(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 2: def decode_step_2(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 3: def decode_step_3(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden"
+        ],
+        "max_new_tokens": 32,
+        "concurrency": 1,
+        "requests_per_prompt": 2,
+        "weight": 1,
+        "min_input_tokens": 230,
+        "max_input_tokens": 281
+      },
+      {
+        "id": "agent_2k",
+        "prompts": [
+          "You are reviewing an inference optimization experiment. Read the following recorded tasks and configuration records. Identify the likely bottleneck and give a concrete validation plan.\nRecord 0: def decode_step_0(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 1: def decode_step_1(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 2: def decode_step_2(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 3: def decode_step_3(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 4: def decode_step_4(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 5: def decode_step_5(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 6: def decode_step_6(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 7: def decode_step_7(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 8: def decode_step_8(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 9: def decode_step_9(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 10: def decode_step_10(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 11: def decode_step_11(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 12: def decode_step_12(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 13: def decode_step_13(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 14: def decode_step_14(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 15: def decode_step_15(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 16: def decode_step_16(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 17: def decode_step_17(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 18: def decode_step_18(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 19: def decode_step_19(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 20: def decode_step_20(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 21: def decode_step_21(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 22: def decode_step_22(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 23: def decode_step_23(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 24: def decode_step_24(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 25: def decode_step_25(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 26: def decode_step_26(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 27: def decode_step_27(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 28: def decode_step_28(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 29: def decode_step_29(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 30: def decode_step_30(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals,"
+        ],
+        "max_new_tokens": 32,
+        "concurrency": 1,
+        "requests_per_prompt": 2,
+        "weight": 2,
+        "min_input_tokens": 1843,
+        "max_input_tokens": 2252
+      },
+      {
+        "id": "concurrent_2",
+        "prompts": [
+          "You are reviewing an inference optimization experiment. Read the following recorded tasks and configuration records. Identify the likely bottleneck and give a concrete validation plan.\nRecord 0: def decode_step_0(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 1: def decode_step_1(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 2: def decode_step_2(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 3: def decode_step_3(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 4: def decode_step_4(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 5: def decode_step_5(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 6: def decode_step_6(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 7: def decode_step_7(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden"
+        ],
+        "max_new_tokens": 32,
+        "concurrency": 2,
+        "requests_per_prompt": 2,
+        "weight": 1,
+        "min_input_tokens": 460,
+        "max_input_tokens": 563
+      }
+    ],
+    "observation_profile": "agent_2k",
+    "cases": "benchmarks/text-smoke.json",
+    "description": "Bounded iteration workload: 256/2048-token inputs and concurrency 2; use scripts/build_representative_config.py to generate broader validation workloads.",
+    "prompts": [
+      "You are reviewing an inference optimization experiment. Read the following recorded tasks and configuration records. Identify the likely bottleneck and give a concrete validation plan.\nRecord 0: def decode_step_0(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 1: def decode_step_1(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 2: def decode_step_2(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden), update_cache(cache, hidden)\nNotes: preserve deterministic output; compare prefill latency, decode intervals, memory usage and queue latency.\nRecord 3: def decode_step_3(state, cache):\n    query = attention(state, cache)\n    hidden = mlp(query)\n    return sample(hidden"
+    ],
+    "max_new_tokens": 32,
+    "concurrency": 1
+  },
+  "evaluation": {
+    "repeats": 5,
+    "warmup": 1,
+    "min_gain": 0.02,
+    "confidence": 0.95,
+    "max_retests": 1,
+    "reference_repeats": 3,
+    "min_reference_consensus": 0.6666666666666666,
+    "atol": 0.01,
+    "rtol": 0.01,
+    "max_normalized_rms": 0.02,
+    "exact_tokens": true,
+    "require_exclusive_gpu": true,
+    "require_continuous_device_telemetry": true,
+    "device_sample_interval": 1.0,
+    "min_tail_requests": 100,
+    "max_temperature_c": 80,
+    "max_profile_regression": 0.03,
+    "quality": {
+      "command": [
+        "{python}",
+        "{project}/scripts/quality_cases.py",
+        "--request",
+        "{request}",
+        "--output",
+        "{output}",
+        "--cases",
+        "{project}/benchmarks/task-quality-50.json"
+      ],
+      "files": [
+        "scripts/quality_cases.py",
+        "benchmarks/task-quality-50.json"
+      ],
+      "repeats": 1,
+      "timeout_seconds": 1800,
+      "min_scores": {
+        "accuracy_core": 0.8
+      },
+      "max_regressions": {
+        "accuracy": 0.05,
+        "accuracy_core": 0.05,
+        "accuracy_arithmetic": 0.05,
+        "accuracy_string": 0.05,
+        "accuracy_reading": 0.05,
+        "accuracy_logic": 0.05,
+        "accuracy_coding": 0.05,
+        "accuracy_tool": 0.05
+      },
+      "paired": {
+        "min_cases": 50,
+        "confidence": 0.95,
+        "max_loss_rate": 0.05,
+        "decision_mode": "observed_loss"
+      },
+      "baseline_repeats": 1,
+      "category_item_tolerance": 1
+    },
+    "measurement_protocol_version": 3,
+    "objective": "request_output_tokens_per_second_mean",
+    "limits": {},
+    "correctness_mode": "quality",
+    "min_token_agreement": 0.9,
+    "logit_samples": 64,
+    "concurrency": 2,
+    "device_backend": "cuda",
+    "resource_sample_interval": 0.05,
+    "distribution_diagnostics": true,
+    "batch_divergence_max_logit_gap": 0.5
+  },
+  "agent": {
+    "max_new_tokens": 8192,
+    "request_timeout": 1800,
+    "thinking": {
+      "enabled": false,
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "top_k": 20,
+      "repetition_penalty": 1.05
+    },
+    "prompt": "prompts/coder-continuous.md",
+    "backend": "qwen",
+    "use_raw_api": true,
+    "thought_in_content": false,
+    "sampling": {
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "top_k": 20,
+      "repetition_penalty": 1.05
+    },
+    "context_reserve_tokens": 2048,
+    "shell_output_chars": 12000,
+    "exact_context": true,
+    "trace_requests": true,
+    "history_reasoning": "last",
+    "related_history": false,
+    "edit_tool": true,
+    "extractive_memory": true,
+    "memory_max_tokens": 2048
+  },
+  "engine": {
+    "adapter": "transformers",
+    "initial_source": "engines/transformers",
+    "model_format": "safetensors",
+    "model_loader": "auto",
+    "supported_devices": [
+      "cpu",
+      "cuda",
+      "rocm"
+    ],
+    "supported_quantization": [
+      "none",
+      "bnb-nf4",
+      "bnb-fp4",
+      "bnb-int8"
+    ],
+    "required_packages": [
+      "torch",
+      "transformers",
+      "safetensors"
+    ],
+    "build_command": [
+      "{python}",
+      "build_native.py"
+    ],
+    "build_timeout_seconds": 300,
+    "thinking": {
+      "enabled": false
+    }
+  },
+  "profiling": {
+    "coverage": "all",
+    "max_new_tokens": 16,
+    "max_profiles_per_session": 2,
+    "max_matrix_profiles": 3,
+    "max_age_seconds": 7200,
+    "timeout_seconds": 900,
+    "enabled": true,
+    "reuse_stable_survey": false,
+    "reuse_max_age_seconds": 86400
+  },
+  "probe": {
+    "enabled": true,
+    "repeats": 1,
+    "warmup": 0,
+    "timeout_seconds": 900,
+    "max_attempts": 2,
+    "profile_coverage": "selected"
+  },
+  "startup_timeout": 900,
+  "request_timeout": 600,
+  "rounds": 3,
+  "runtime_python": "/home/yxy/.venvs/vibeforge-qwen38/bin/python"
+}

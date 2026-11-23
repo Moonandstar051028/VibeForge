@@ -1,0 +1,15 @@
+{
+  "backend": "transformers",
+  "model_path": "/home/yxy/weight/Qwen3.8-27B",
+  "dtype": "bfloat16",
+  "device": "cuda:0",
+  "use_cache": true,
+  "max_context": 32768,
+  "max_new_tokens": 8192,
+  "thinking": {
+    "enabled": false
+  },
+  "num_threads": 8,
+  "model_loader": "image_text",
+  "attn_implementation": "sdpa"
+}

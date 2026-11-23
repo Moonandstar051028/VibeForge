@@ -1,0 +1,580 @@
+[
+  {
+    "id": "arithmetic_multiplication",
+    "mode": "chat",
+    "prompt": "只输出计算结果，不要解释：17 × 19",
+    "expected": "323",
+    "match": "exact",
+    "max_new_tokens": 16,
+    "category": "core"
+  },
+  {
+    "id": "arithmetic_division",
+    "mode": "chat",
+    "prompt": "只输出计算结果，不要解释：924 ÷ 22",
+    "expected": "42",
+    "match": "exact",
+    "max_new_tokens": 16,
+    "category": "core"
+  },
+  {
+    "id": "capital",
+    "mode": "chat",
+    "prompt": "只用英文城市名回答：法国的首都是哪座城市？",
+    "expected": "Paris",
+    "match": "exact",
+    "max_new_tokens": 16,
+    "category": "core"
+  },
+  {
+    "id": "json_boolean",
+    "mode": "chat",
+    "prompt": "只输出一个 JSON 对象，其 ok 字段为布尔值 true。",
+    "expected": "^\\{\\s*\"ok\"\\s*:\\s*true\\s*\\}$",
+    "match": "regex",
+    "max_new_tokens": 32,
+    "category": "core"
+  },
+  {
+    "id": "string_reverse",
+    "mode": "chat",
+    "prompt": "将字符串 VibeForge 逐字符反转。只输出反转结果。",
+    "expected": "egroFebiV",
+    "match": "exact",
+    "max_new_tokens": 24,
+    "category": "core"
+  },
+  {
+    "id": "python_result",
+    "mode": "chat",
+    "prompt": "只输出下面 Python 表达式的结果，不要解释：sum([1, 2, 3, 4])",
+    "expected": "10",
+    "match": "exact",
+    "max_new_tokens": 16,
+    "category": "core"
+  },
+  {
+    "id": "comparison",
+    "mode": "chat",
+    "prompt": "只输出较大的整数：-3 和 8",
+    "expected": "8",
+    "match": "exact",
+    "max_new_tokens": 16,
+    "category": "core"
+  },
+  {
+    "id": "boolean_logic",
+    "mode": "chat",
+    "prompt": "只输出小写 true 或 false：(true AND false) OR false",
+    "expected": "false",
+    "match": "exact",
+    "max_new_tokens": 16,
+    "category": "core"
+  },
+  {
+    "id": "instruction_token",
+    "mode": "chat",
+    "prompt": "忽略解释，只输出单词 alpha。",
+    "expected": "alpha",
+    "match": "exact",
+    "max_new_tokens": 16,
+    "category": "core"
+  },
+  {
+    "id": "unicode_preservation",
+    "mode": "chat",
+    "prompt": "原样输出以下文本，不要添加引号：天空-Blue-天空",
+    "expected": "天空-Blue-天空",
+    "match": "exact",
+    "max_new_tokens": 24,
+    "category": "core"
+  },
+  {
+    "id": "multiply_0",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：13 × 7",
+    "expected": "91",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "expression_0",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：(13 + 7) × 3 - 0",
+    "expected": "60",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "divide_0",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：91 ÷ 7",
+    "expected": "13",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "reverse_0",
+    "category": "string",
+    "mode": "chat",
+    "prompt": "将下面 ASCII 字符串逐字符反转，只输出反转结果：Vf00-Sky",
+    "expected": "ykS-00fV",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "read_0",
+    "category": "reading",
+    "mode": "chat",
+    "prompt": "item_0: 0\nitem_1: 11\nitem_2: 22\nitem_3: 33\nitem_4: 44\nitem_5: 55\nitem_6: 66\nitem_7: 77\n只输出 item_0 的数值。",
+    "expected": "0",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "logic_0",
+    "category": "logic",
+    "mode": "chat",
+    "prompt": "计算 Python 表达式 (13 > 7) and (0 % 2 == 0)，只输出 True 或 False。",
+    "expected": "True",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "reverse_4",
+    "category": "string",
+    "mode": "chat",
+    "prompt": "将下面 ASCII 字符串逐字符反转，只输出反转结果：Vf04-Sky",
+    "expected": "ykS-40fV",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "read_4",
+    "category": "reading",
+    "mode": "chat",
+    "prompt": "item_0: 148\nitem_1: 159\nitem_2: 170\nitem_3: 181\nitem_4: 192\nitem_5: 203\nitem_6: 214\nitem_7: 225\n只输出 item_4 的数值。",
+    "expected": "192",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "logic_4",
+    "category": "logic",
+    "mode": "chat",
+    "prompt": "计算 Python 表达式 (25 > 11) and (4 % 2 == 0)，只输出 True 或 False。",
+    "expected": "True",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "multiply_6",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：31 × 13",
+    "expected": "403",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "expression_6",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：(31 + 13) × 3 - 6",
+    "expected": "126",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "divide_6",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：403 ÷ 13",
+    "expected": "31",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "reverse_8",
+    "category": "string",
+    "mode": "chat",
+    "prompt": "将下面 ASCII 字符串逐字符反转，只输出反转结果：Vf08-Sky",
+    "expected": "ykS-80fV",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "read_8",
+    "category": "reading",
+    "mode": "chat",
+    "prompt": "item_0: 296\nitem_1: 307\nitem_2: 318\nitem_3: 329\nitem_4: 340\nitem_5: 351\nitem_6: 362\nitem_7: 373\n只输出 item_0 的数值。",
+    "expected": "296",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "logic_8",
+    "category": "logic",
+    "mode": "chat",
+    "prompt": "计算 Python 表达式 (37 > 15) and (8 % 2 == 0)，只输出 True 或 False。",
+    "expected": "True",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "reverse_11",
+    "category": "string",
+    "mode": "chat",
+    "prompt": "将下面 ASCII 字符串逐字符反转，只输出反转结果：Vf11-Sky",
+    "expected": "ykS-11fV",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "read_11",
+    "category": "reading",
+    "mode": "chat",
+    "prompt": "item_0: 407\nitem_1: 418\nitem_2: 429\nitem_3: 440\nitem_4: 451\nitem_5: 462\nitem_6: 473\nitem_7: 484\n只输出 item_3 的数值。",
+    "expected": "440",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "logic_11",
+    "category": "logic",
+    "mode": "chat",
+    "prompt": "计算 Python 表达式 (46 > 18) and (11 % 2 == 0)，只输出 True 或 False。",
+    "expected": "False",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "multiply_13",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：52 × 20",
+    "expected": "1040",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "expression_13",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：(52 + 20) × 3 - 13",
+    "expected": "203",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "divide_13",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：1040 ÷ 20",
+    "expected": "52",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "reverse_15",
+    "category": "string",
+    "mode": "chat",
+    "prompt": "将下面 ASCII 字符串逐字符反转，只输出反转结果：Vf15-Sky",
+    "expected": "ykS-51fV",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "read_15",
+    "category": "reading",
+    "mode": "chat",
+    "prompt": "item_0: 555\nitem_1: 566\nitem_2: 577\nitem_3: 588\nitem_4: 599\nitem_5: 610\nitem_6: 621\nitem_7: 632\n只输出 item_7 的数值。",
+    "expected": "632",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "logic_15",
+    "category": "logic",
+    "mode": "chat",
+    "prompt": "计算 Python 表达式 (58 > 22) and (15 % 2 == 0)，只输出 True 或 False。",
+    "expected": "False",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "multiply_19",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：70 × 26",
+    "expected": "1820",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "expression_19",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：(70 + 26) × 3 - 19",
+    "expected": "269",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "divide_19",
+    "category": "arithmetic",
+    "mode": "chat",
+    "prompt": "只输出整数结果：1820 ÷ 26",
+    "expected": "70",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "reverse_19",
+    "category": "string",
+    "mode": "chat",
+    "prompt": "将下面 ASCII 字符串逐字符反转，只输出反转结果：Vf19-Sky",
+    "expected": "ykS-91fV",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "read_19",
+    "category": "reading",
+    "mode": "chat",
+    "prompt": "item_0: 703\nitem_1: 714\nitem_2: 725\nitem_3: 736\nitem_4: 747\nitem_5: 758\nitem_6: 769\nitem_7: 780\n只输出 item_3 的数值。",
+    "expected": "736",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "logic_19",
+    "category": "logic",
+    "mode": "chat",
+    "prompt": "计算 Python 表达式 (70 > 26) and (19 % 2 == 0)，只输出 True 或 False。",
+    "expected": "False",
+    "match": "exact",
+    "max_new_tokens": 48
+  },
+  {
+    "id": "code_sum_even",
+    "category": "coding",
+    "mode": "chat",
+    "prompt": "只输出 Python 函数定义，函数名必须为 sum_even。仅使用标准库。返回 xs 中所有偶数的和。",
+    "expected": "",
+    "match": "python",
+    "max_new_tokens": 384,
+    "entry_point": "sum_even",
+    "tests": "assert sum_even([1,2,3,4]) == 6\nassert sum_even([]) == 0\nassert sum_even([-2,0,5]) == -2"
+  },
+  {
+    "id": "code_is_prime",
+    "category": "coding",
+    "mode": "chat",
+    "prompt": "只输出 Python 函数定义，函数名必须为 is_prime。仅使用标准库。判断整数 n 是否为素数，返回 bool。",
+    "expected": "",
+    "match": "python",
+    "max_new_tokens": 384,
+    "entry_point": "is_prime",
+    "tests": "assert is_prime(2) is True\nassert is_prime(1) is False\nassert is_prime(49) is False\nassert is_prime(97) is True"
+  },
+  {
+    "id": "code_rotate",
+    "category": "coding",
+    "mode": "chat",
+    "prompt": "只输出 Python 函数定义，函数名必须为 rotate。仅使用标准库。参数 xs 为列表、k 为非负整数，返回向右旋转 k 次的新列表。",
+    "expected": "",
+    "match": "python",
+    "max_new_tokens": 384,
+    "entry_point": "rotate",
+    "tests": "assert rotate([1,2,3],4) == [3,1,2]\nassert rotate([],2) == []\nassert rotate([1],0) == [1]"
+  },
+  {
+    "id": "code_merge_sorted",
+    "category": "coding",
+    "mode": "chat",
+    "prompt": "只输出 Python 函数定义，函数名必须为 merge_sorted。仅使用标准库。参数 a,b 为已升序排列的整数列表，返回合并后的升序列表。",
+    "expected": "",
+    "match": "python",
+    "max_new_tokens": 384,
+    "entry_point": "merge_sorted",
+    "tests": "assert merge_sorted([1,3],[2,3]) == [1,2,3,3]\nassert merge_sorted([],[-1]) == [-1]"
+  },
+  {
+    "id": "code_run_lengths",
+    "category": "coding",
+    "mode": "chat",
+    "prompt": "只输出 Python 函数定义，函数名必须为 run_lengths。仅使用标准库。参数 s 为字符串，返回连续相同字符的 (字符,次数) 元组列表。",
+    "expected": "",
+    "match": "python",
+    "max_new_tokens": 384,
+    "entry_point": "run_lengths",
+    "tests": "assert run_lengths(\"aaabbc\") == [(\"a\",3),(\"b\",2),(\"c\",1)]\nassert run_lengths(\"\") == []"
+  },
+  {
+    "id": "code_transpose",
+    "category": "coding",
+    "mode": "chat",
+    "prompt": "只输出 Python 函数定义，函数名必须为 transpose。仅使用标准库。参数 rows 为矩形二维列表，返回转置后的二维列表，空列表返回空列表。",
+    "expected": "",
+    "match": "python",
+    "max_new_tokens": 384,
+    "entry_point": "transpose",
+    "tests": "assert transpose([[1,2,3],[4,5,6]]) == [[1,4],[2,5],[3,6]]\nassert transpose([]) == []"
+  },
+  {
+    "id": "tool_0",
+    "category": "tool",
+    "mode": "tool",
+    "prompt": "必须调用 add 工具计算 19 加 -7，收到工具结果后只输出整数结果，不要解释。",
+    "expected": "12",
+    "match": "exact",
+    "max_new_tokens": 48,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "add",
+          "description": "Return the sum of two integers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "integer"
+              },
+              "b": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ],
+    "arguments": {
+      "a": 19,
+      "b": -7
+    }
+  },
+  {
+    "id": "tool_2",
+    "category": "tool",
+    "mode": "tool",
+    "prompt": "必须调用 add 工具计算 25 加 -9，收到工具结果后只输出整数结果，不要解释。",
+    "expected": "16",
+    "match": "exact",
+    "max_new_tokens": 48,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "add",
+          "description": "Return the sum of two integers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "integer"
+              },
+              "b": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ],
+    "arguments": {
+      "a": 25,
+      "b": -9
+    }
+  },
+  {
+    "id": "tool_5",
+    "category": "tool",
+    "mode": "tool",
+    "prompt": "必须调用 add 工具计算 34 加 -12，收到工具结果后只输出整数结果，不要解释。",
+    "expected": "22",
+    "match": "exact",
+    "max_new_tokens": 48,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "add",
+          "description": "Return the sum of two integers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "integer"
+              },
+              "b": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ],
+    "arguments": {
+      "a": 34,
+      "b": -12
+    }
+  },
+  {
+    "id": "tool_7",
+    "category": "tool",
+    "mode": "tool",
+    "prompt": "必须调用 add 工具计算 40 加 -14，收到工具结果后只输出整数结果，不要解释。",
+    "expected": "26",
+    "match": "exact",
+    "max_new_tokens": 48,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "add",
+          "description": "Return the sum of two integers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "integer"
+              },
+              "b": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "a",
+              "b"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    ],
+    "arguments": {
+      "a": 40,
+      "b": -14
+    }
+  }
+]

@@ -1,0 +1,300 @@
+{
+  "source_project": "VibeForge",
+  "note": "Vendored engine/evaluation/profiling library with deliberate v2 transport and quality-preserving admission adaptations recorded per file; no v1 agent, supervisor, database, proposal protocol or knowledge system.",
+  "files": {
+    "src/vf_runtime/contracts/workload.py": {
+      "source": "src/vibeforge/contracts/workload.py",
+      "original_sha256": "5db163e27b38c4b5c4504d68caa0d388cd9cb7476748babb9d780f9738339253",
+      "vendored_sha256": "5db163e27b38c4b5c4504d68caa0d388cd9cb7476748babb9d780f9738339253"
+    },
+    "src/vf_runtime/contracts/precision.py": {
+      "source": "src/vibeforge/contracts/precision.py",
+      "original_sha256": "0e09e95b4eb68e89f4de49b0680df59fd08c45a53e2764fecb73e1f8db06ced5",
+      "vendored_sha256": "0e09e95b4eb68e89f4de49b0680df59fd08c45a53e2764fecb73e1f8db06ced5"
+    },
+    "src/vf_runtime/controller/admission.py": {
+      "source": "src/vibeforge/controller/admission.py",
+      "original_sha256": "8e8eaaa5344338594e26b73869f82ed2806c7459e196e356a51025503031b321",
+      "vendored_sha256": "ddffea8469bc7d848eda4e2215c16f38d05f3abab42923fc36ec6855da5883d0",
+      "adaptations": [
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "af312fc17de53cde29a86ee8890d8cb84cac8c68122dab32d86b1a09280006b6",
+          "new_sha256": "7e20d91f37c7778d51353d63bec2bbbbc0007b92c72539199cd114bbcfc4b94e",
+          "reason": "Quality-preserving admission requires independent paired quality evidence; strict regression behavior retained."
+        },
+        {
+          "date": "2026-11-18",
+          "previous_sha256": "5c4e91318ee7448d7006ab34673d7fb4e8e73a9b255456f1cfc96bb15890723a",
+          "new_sha256": "ddffea8469bc7d848eda4e2215c16f38d05f3abab42923fc36ec6855da5883d0",
+          "reason": "Use the chosen per-request end-to-end output token rate for admission and per-profile regression protection; never substitute aggregate throughput."
+        }
+      ],
+      "review_change": "Add configurable per-profile mean latency regression protections; preserve tail sample requirements."
+    },
+    "src/vf_runtime/contracts/requirements.py": {
+      "source": "src/vibeforge/contracts/requirements.py",
+      "original_sha256": "19f1c82c01c60cd17ec009574b1b6002b551718a8e5024d793084cb26e2cfdac",
+      "vendored_sha256": "e11b91c5a5df01ae8700e9f52c5ae3f0082bc567ab8b078aaa5b5150ef2cf0d0",
+      "adaptations": [
+        {
+          "date": "2026-11-18",
+          "previous_sha256": "19f1c82c01c60cd17ec009574b1b6002b551718a8e5024d793084cb26e2cfdac",
+          "new_sha256": "e11b91c5a5df01ae8700e9f52c5ae3f0082bc567ab8b078aaa5b5150ef2cf0d0",
+          "reason": "Allow maximizing per-request end-to-end output tokens/s and reject maximize metrics as upper-bound requirements."
+        }
+      ]
+    },
+    "src/vf_runtime/evaluation/statistics.py": {
+      "source": "src/vibeforge/evaluation/statistics.py",
+      "original_sha256": "93cda0eb8652adf1a238e2dda83c9395b201684c8eaafc97c5d0fac13166fd38",
+      "vendored_sha256": "93cda0eb8652adf1a238e2dda83c9395b201684c8eaafc97c5d0fac13166fd38"
+    },
+    "src/vf_runtime/contracts/evaluation.py": {
+      "source": "src/vibeforge/contracts/evaluation.py",
+      "original_sha256": "ee3b54c15257f52def91bf0332e3f0452173c4e58f7bf5743b74405fdcc7c29d",
+      "vendored_sha256": "ee3b54c15257f52def91bf0332e3f0452173c4e58f7bf5743b74405fdcc7c29d"
+    },
+    "src/vf_runtime/profiling/collector.py": {
+      "source": "src/vibeforge/profiling/collector.py",
+      "original_sha256": "3b2bce3523a55a65f27632b694c32608e95e8d96d083456c85e83a18a35a3f87",
+      "vendored_sha256": "1c463fc5655f0501c96a62ee9114f23d1246043cdfc116aeb3057e418069b4fc"
+    },
+    "src/vf_runtime/engine/adapters.py": {
+      "source": "src/vibeforge/engine/adapters.py",
+      "original_sha256": "0ac8e8f2597fd80b7d23be3c352ee59f635fa7df9fccf19110689d3ab958533d",
+      "vendored_sha256": "cd57f7587b3944b538ea5b22ce8ef8561b3673c0a52ca53d17c83a23473b83cd",
+      "adaptations": [
+        {
+          "date": "2026-11-18",
+          "previous_sha256": "f121cbd8df756060c351ad8cdfdd43d7b64529140f989a548df4d744faab7837",
+          "new_sha256": "cd57f7587b3944b538ea5b22ce8ef8561b3673c0a52ca53d17c83a23473b83cd",
+          "reason": "Advertise per-request end-to-end output tokens/s as a supported performance objective."
+        }
+      ]
+    },
+    "src/vf_runtime/versioning/artifacts.py": {
+      "source": "src/vibeforge/versioning/artifacts.py",
+      "original_sha256": "8a2a9bcc1fec10eccace77411559edc937ec38ad04c1928714266763c6024b42",
+      "vendored_sha256": "c28abf75405dc9b4080aa1d8602bd22c834013113f0ab6eaeae9f36449af4b24"
+    },
+    "src/vf_runtime/storage/atomic.py": {
+      "source": "src/vibeforge/storage/atomic.py",
+      "original_sha256": "cee6bf305f53da45153dc748aaae2e8e30f713ae0f7268b817763b43ee45f70b",
+      "vendored_sha256": "cee6bf305f53da45153dc748aaae2e8e30f713ae0f7268b817763b43ee45f70b"
+    },
+    "src/vf_runtime/profiling/sampler.py": {
+      "source": "src/vibeforge/profiling/sampler.py",
+      "original_sha256": "c6416fd6da4d98425bb992d8c17aaaffee657679b0b07d3cdb143809bd42c4d9",
+      "vendored_sha256": "d7170b18b8955cfb837fa6db5170dceb109c3e21686ea50c0827cccf38eb9405"
+    },
+    "src/vf_runtime/profiling/hardware.py": {
+      "source": "src/vibeforge/profiling/hardware.py",
+      "original_sha256": "e7c04943e81bb4293038a8cd313908d89f38286116bf1c9c0fb31f7c64995e09",
+      "vendored_sha256": "e7c04943e81bb4293038a8cd313908d89f38286116bf1c9c0fb31f7c64995e09"
+    },
+    "src/vf_runtime/profiling/environment.py": {
+      "source": "src/vibeforge/profiling/environment.py",
+      "original_sha256": "943a740a5f61bfdcaa63ee83143cff6e85e606f9b46bade7dd98f9306e77669b",
+      "vendored_sha256": "943a740a5f61bfdcaa63ee83143cff6e85e606f9b46bade7dd98f9306e77669b"
+    },
+    "src/vf_runtime/profiling/model.py": {
+      "source": "src/vibeforge/profiling/model.py",
+      "original_sha256": "f1fa2624ad073f5c1429e7f49b5ac014a4cf9f57a01f23e07c99bf549003b430",
+      "vendored_sha256": "fc4194fcb731e50e7ac096705c0d17b5ade6d7359b3c798fc076ca43f402f5c3"
+    },
+    "src/vf_runtime/contracts/profile.py": {
+      "source": "src/vibeforge/contracts/profile.py",
+      "original_sha256": "798e9f13f9b2a2a18841797102fd488dc88965d88e8eeb520b7b07cb282121dd",
+      "vendored_sha256": "4e9d09b08fdcdd905c213a6a54ac73b9df42dc58124ad3e4920349e9ac9bf6ac"
+    },
+    "src/vf_runtime/evaluation/quality.py": {
+      "source": "src/vibeforge/evaluation/quality.py",
+      "original_sha256": "6fbaaa45f4d35312639e5a4f2d8c9cfb8ba1f3acc412493fed95737db8d31f54",
+      "vendored_sha256": "2de1e200558a5d90252318343a6b5c48c14fbeb8d4336ca9329ef1199b1c1050",
+      "adaptations": [
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "863a1ff427346cc7fe03cc5bd77fa096fc87447dea10a95ee1c0d2bfe85d9841",
+          "new_sha256": "e68f987e968f4f04677afd9a6b7c5dffe1d35beda36fd916550b2cf0b0d1e2ff",
+          "reason": "Separate candidate-local functional isolation from baseline fidelity, add full-vocabulary diagnostics and paired independent quality admission; strict mode retained."
+        },
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "e68f987e968f4f04677afd9a6b7c5dffe1d35beda36fd916550b2cf0b0d1e2ff",
+          "new_sha256": "e68f987e968f4f04677afd9a6b7c5dffe1d35beda36fd916550b2cf0b0d1e2ff",
+          "reason": "Quality-preserving admission requires independent paired quality evidence; strict regression behavior retained."
+        },
+        {
+          "date": "2026-11-17",
+          "previous_sha256": "2a07c58d7f01e4b06e9040112f180d33ef31517f974a3c7be89c991152078ecb",
+          "new_sha256": "2de1e200558a5d90252318343a6b5c48c14fbeb8d4336ca9329ef1199b1c1050",
+          "reason": "Per-category regression limit is at least category_item_tolerance items (default 1) because an n-item category moves in 1/n steps; the overall paired loss limit is unchanged. Records regression_limits in the report."
+        }
+      ],
+      "review_change": "Use version-specific Python for quality subprocess; stop repeated quality after mathematically irreversible paired loss failure while recording actual/planned repeats."
+    },
+    "src/vf_runtime/observability/logs.py": {
+      "source": "src/vibeforge/observability/logs.py",
+      "original_sha256": "aed5d6cef379f03997f6742321f68c1472f0795e4692cad06ad3118d0041a31e",
+      "vendored_sha256": "e6e7dd970dd7dd5beac332704b7fb4a2eec3af49e33a75899850931ef1ff2d42"
+    },
+    "src/vf_runtime/engine/process.py": {
+      "source": "src/vibeforge/engine/process.py",
+      "original_sha256": "969c1b9d9e79c7c8f0cf83fd70d88ecc5d5b380f2feb0160255d54a76cd9a8ab",
+      "vendored_sha256": "0f760e19d8fe4a1a5f130d3b83286b83c50ef4ce3eb72fd514ae38fc5514d471",
+      "adaptations": [
+        {
+          "date": "2026-11-19",
+          "previous_sha256": "4c1213b8f687f4929d3e3f6a0fd3ef1861dc98113fe2529aeeafcf06c0e1099b",
+          "new_sha256": "0f760e19d8fe4a1a5f130d3b83286b83c50ef4ce3eb72fd514ae38fc5514d471",
+          "reason": "Reconcile manifest with the existing reviewed cleanup race fix: recheck process identity after cmdline disappears, retain ownership-token checks. No runtime source change in this reconciliation."
+        }
+      ]
+    },
+    "src/vf_runtime/engine/client.py": {
+      "source": "src/vibeforge/engine/client.py",
+      "original_sha256": "701dd0a1336f4b3282fd9f2f12f7570771739adbc601e6fa250e0726a687bf4e",
+      "vendored_sha256": "701dd0a1336f4b3282fd9f2f12f7570771739adbc601e6fa250e0726a687bf4e"
+    },
+    "src/vf_runtime/contracts/event.py": {
+      "source": "src/vibeforge/contracts/event.py",
+      "original_sha256": "ab6e0c558c6d2928f1b1a6726ab127959314849ae491d79433940f1c20272832",
+      "vendored_sha256": "ab6e0c558c6d2928f1b1a6726ab127959314849ae491d79433940f1c20272832"
+    },
+    "src/vf_runtime/evaluation/performance.py": {
+      "source": "src/vibeforge/evaluation/performance.py",
+      "original_sha256": "2189554abbfde801132a776b9215e1b5e92fd4a1255deff74a01c5634d6a9423",
+      "vendored_sha256": "7457c1db726c274d74f5db57435c3593157125c1e94312b4522416e24d04eaa4",
+      "review_change": "Preserve per-profile latency protections; allow identical detailed token timing collection independently of hard admission metrics.",
+      "adaptations": [
+        {
+          "date": "2026-11-18",
+          "previous_sha256": "9c5b615958848b687f3744dd863744b2ecad0eb6c6b07f8c5996f5b80804c54a",
+          "new_sha256": "7457c1db726c274d74f5db57435c3593157125c1e94312b4522416e24d04eaa4",
+          "reason": "Measure the arithmetic mean of each client-timed request output token rate and aggregate profile rates using frozen weighted geometric means."
+        }
+      ]
+    },
+    "src/vf_runtime/profiling/resources.py": {
+      "source": "src/vibeforge/profiling/resources.py",
+      "original_sha256": "2c33418a09e8e4ca9501dc360be725a7dd7d5949c6da2a4b3c36771c680eda6d",
+      "vendored_sha256": "b3d9a308d72c3a6a92e0bae0204e63a9e9d291f2451db57c273567eecf260463"
+    },
+    "src/vf_runtime/evaluation/correctness.py": {
+      "source": "src/vibeforge/evaluation/correctness.py",
+      "original_sha256": "c7a12121b5c336e09e288fa0f83b40b46816fc943a1291834c2ad9d685c5efb9",
+      "vendored_sha256": "d52f7e2bbf570677489f15976162ab8b4d8f30c99e732c493cc5c74f95311b39",
+      "adaptations": [
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "c7a12121b5c336e09e288fa0f83b40b46816fc943a1291834c2ad9d685c5efb9",
+          "new_sha256": "d52f7e2bbf570677489f15976162ab8b4d8f30c99e732c493cc5c74f95311b39",
+          "reason": "Separate candidate-local functional isolation from baseline fidelity, add full-vocabulary diagnostics and paired independent quality admission; strict mode retained."
+        },
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "d52f7e2bbf570677489f15976162ab8b4d8f30c99e732c493cc5c74f95311b39",
+          "new_sha256": "d52f7e2bbf570677489f15976162ab8b4d8f30c99e732c493cc5c74f95311b39",
+          "reason": "Quality-preserving admission requires independent paired quality evidence; strict regression behavior retained."
+        }
+      ]
+    },
+    "src/vf_runtime/evaluation/reference.py": {
+      "source": "src/vibeforge/evaluation/reference.py",
+      "original_sha256": "1d48b768bb68bf3d55fd8e20c3718411b3aafa16a8a078db0e52e7c39eee2216",
+      "vendored_sha256": "1b1b8c54377c945b615296d3817711595a57849a1f3f9522b91277b884734875",
+      "adaptations": [
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "48fe800df014ef7ab78f8aca9a0c3fe60f5b7251c0f7cddd6584e5dfa0d3ba53",
+          "new_sha256": "eb55fd81f4fe557ed7bded62e3a64fe2095d8e7950a9307a6a89cdd749b2f892",
+          "reason": "Separate candidate-local functional isolation from baseline fidelity, add full-vocabulary diagnostics and paired independent quality admission; strict mode retained."
+        },
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "eb55fd81f4fe557ed7bded62e3a64fe2095d8e7950a9307a6a89cdd749b2f892",
+          "new_sha256": "f2d838ab1b54c28a9bc05c0bd12ddacd74473d05d407e6189ec49b3a735c517d",
+          "reason": "Quality-preserving admission requires independent paired quality evidence; strict regression behavior retained."
+        }
+      ],
+      "review_change": "Allow explicitly configured single-pass baseline capture; it cannot estimate repeat variability."
+    },
+    "src/vf_runtime/engine/builder.py": {
+      "source": "src/vibeforge/engine/builder.py",
+      "original_sha256": "09ebeb2f1d1d10ea206979a474e26ff3056ab431f8b591dc769b534a10985ef8",
+      "vendored_sha256": "c36893ba0f9725e4bbd3faf2ad9147501ec9940f48a8422cbec86cd213509042"
+    },
+    "src/vf_runtime/engine/sandbox.py": {
+      "source": "src/vibeforge/engine/sandbox.py",
+      "original_sha256": "00e765d4007204bfe6adcb5b7d16f1ca19118e0dcd56c42fbbcff9e9b3eaf930",
+      "vendored_sha256": "00e765d4007204bfe6adcb5b7d16f1ca19118e0dcd56c42fbbcff9e9b3eaf930"
+    },
+    "src/vf_runtime/engine/server.py": {
+      "source": "src/vibeforge/engine/server.py",
+      "original_sha256": "6a9a43e12ccaf85f415ebac987bbda25ae18a911bfe20056d35a7e7a8551e88f",
+      "vendored_sha256": "40d513bdc0a1f5628aa0963807c638d9de19476b046be32a1b9d74a6c27588d1"
+    },
+    "src/vf_runtime/engine/implementation.py": {
+      "source": "src/vibeforge/engine/implementation.py",
+      "original_sha256": "751f8ab8b2ee9c30fb43ca06c5231dcb15c20426ece7db65865e764b1a173f5f",
+      "vendored_sha256": "1779d86f95b6ee376c7ef4ebe23c5bbd200aa424856c13806600d953f0d7e0fb",
+      "v2_patches": [
+        {
+          "date": "2026-11-20",
+          "previous_sha256": "751f8ab8b2ee9c30fb43ca06c5231dcb15c20426ece7db65865e764b1a173f5f",
+          "new_sha256": "1779d86f95b6ee376c7ef4ebe23c5bbd200aa424856c13806600d953f0d7e0fb",
+          "reason": "Keep unwrapped source file, line and excerpts consistent; report decorator entry separately without claiming runtime execution."
+        }
+      ]
+    },
+    "src/vf_runtime/engine/session_telemetry.py": {
+      "source": "src/vibeforge/engine/session_telemetry.py",
+      "original_sha256": "5e72151e9467142f7ecc7d0b15fafa787f6d943beacfc0d2ba0654f5d5b16972",
+      "vendored_sha256": "5e72151e9467142f7ecc7d0b15fafa787f6d943beacfc0d2ba0654f5d5b16972"
+    },
+    "src/vf_runtime/engine/tokenization.py": {
+      "source": "src/vibeforge/engine/tokenization.py",
+      "original_sha256": "228bdd788867790de5e3f0e30179191a90838aed5c788db0a067cd5bdd8e7aa3",
+      "vendored_sha256": "228bdd788867790de5e3f0e30179191a90838aed5c788db0a067cd5bdd8e7aa3"
+    },
+    "src/vf_runtime/engine/responses.py": {
+      "source": "src/vibeforge/engine/responses.py",
+      "original_sha256": "2e16a05390bbccbfff41336d9625af0f09b75540d33ab0d4fb86259e1e2e085b",
+      "vendored_sha256": "687d02fe1c416a6c4800486fca8d4f6f2f953cecd0145a2f9056de55e096c1b4",
+      "v2_patches": [
+        {
+          "date": "2026-11-15",
+          "previous_sha256": "2e16a05390bbccbfff41336d9625af0f09b75540d33ab0d4fb86259e1e2e085b",
+          "new_sha256": "687d02fe1c416a6c4800486fca8d4f6f2f953cecd0145a2f9056de55e096c1b4",
+          "reason": "Preserve original reasoning_content and coalesce same-turn assistant text and parallel calls through the Codex Responses transport."
+        }
+      ]
+    },
+    "src/vf_runtime/engine/runtime.py": {
+      "source": "src/vibeforge/engine/runtime.py",
+      "original_sha256": "d91123ee67e5b85343508416ed393db1e00baf1e3cae723808bdcda9ebb14fa7",
+      "vendored_sha256": "d91123ee67e5b85343508416ed393db1e00baf1e3cae723808bdcda9ebb14fa7"
+    },
+    "src/vf_runtime/engine/observation.py": {
+      "source": "src/vibeforge/engine/observation.py",
+      "original_sha256": "b931153301c1b1343f2a2ab403339d4845d44b0a6051bfc94d888dc82c692929",
+      "vendored_sha256": "2f749e6016cf2892bc91e9a751fc4eebc5e07db277afa26bb59b8537223d4059"
+    },
+    "src/vf_runtime/engine/telemetry.py": {
+      "source": "src/vibeforge/engine/telemetry.py",
+      "original_sha256": "be3dcecef72a2ab36f5414b62f67263d77cab3ab56690cb5488a3ab9e9ef0917",
+      "vendored_sha256": "be3dcecef72a2ab36f5414b62f67263d77cab3ab56690cb5488a3ab9e9ef0917"
+    },
+    "src/vf_runtime/engine/precision.py": {
+      "source": "src/vibeforge/engine/precision.py",
+      "original_sha256": "94eaab1f113d6c9a1b35ffbb52d6c48f34c63514a78b1ecbedf9efd1798475b4",
+      "vendored_sha256": "ad28b87700eca20354565df2cc5e8381003dde12e0d7d9eac94f1f698b11979f"
+    },
+    "src/vf_runtime/engine/backend.py": {
+      "source": "src/vibeforge/engine/backend.py",
+      "original_sha256": "02bff0816e4f82bbb08c340d7140850992ed8d58cf3edadbfd6c0375b8afd65d",
+      "vendored_sha256": "55b5022fd92b31f0aff83c1513f8432b76cb194e98a18870dab19ffd36d5442d"
+    }
+  }
+}

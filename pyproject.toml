@@ -3,35 +3,23 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vibeforge"
+name = "vibeforge-v2"
 version = "0.1.0"
-description = "Agent-driven generation and optimization of specialized inference engines."
-readme = "README.md"
+description = "A small self-hosted inference optimization loop."
 requires-python = ">=3.10"
-dependencies = [
-    "qwen-agent==0.0.34",
-    "soundfile>=0.12",
-    "tqdm>=4.65",
-    "python-dateutil>=2.8",
-]
+dependencies = ["qwen-agent==0.0.34", "soundfile>=0.12", "tqdm>=4.65", "python-dateutil>=2.8"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+inference = ["torch>=2.5", "transformers>=4.51,<5", "safetensors", "accelerate"]
 
 [project.scripts]
-vibeforge = "vibeforge.cli.main:main"
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-include-package-data = false
+vibeforge-v2 = "vibeforge_v2.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["vibeforge*"]
-namespaces = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-ra"
-markers = [
-    "target: real Qwen deployment; requires the configured inference environment and sufficient memory",
-    "inference: offline tiny Transformers CPU models; requires VIBEFORGE_TEST_INFERENCE_PYTHON",
-]
+

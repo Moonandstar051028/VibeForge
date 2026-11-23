@@ -1,0 +1,11 @@
+{
+  "note": "Observed test environment; GPU packages must match your CUDA platform.",
+  "packages": {
+    "qwen-agent": "0.0.34",
+    "torch": "2.7.1",
+    "transformers": "4.57.1",
+    "safetensors": "0.8.0",
+    "accelerate": "1.15.0",
+    "pytest": "9.2.0"
+  }
+}

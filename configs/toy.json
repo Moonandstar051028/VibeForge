@@ -1,0 +1,57 @@
+{
+  "rounds": 2,
+  "model": {
+    "name": "toy-fixture",
+    "fixture": true,
+    "device": "cpu",
+    "max_context": 32768,
+    "dtype": "float32"
+  },
+  "hardware": {
+    "device": "cpu"
+  },
+  "engine": {
+    "initial_source": "engines/toy",
+    "adapter": "python",
+    "build_command": []
+  },
+  "workload": {
+    "prompts": [
+      "alpha beta",
+      "cache boundary"
+    ],
+    "max_new_tokens": 8,
+    "concurrency": 2,
+    "cases": "benchmarks/toy.json"
+  },
+  "evaluation": {
+    "repeats": 3,
+    "warmup": 1,
+    "min_gain": 0.05,
+    "confidence": 0.95,
+    "atol": 0,
+    "rtol": 0,
+    "max_retests": 0,
+    "require_exclusive_gpu": false
+  },
+  "agent": {
+    "max_new_tokens": 2048,
+    "thinking": {
+      "enabled": false
+    },
+    "prompt": "prompts/engineer.md"
+  },
+  "profiling": {
+    "coverage": "all",
+    "max_matrix_profiles": 2,
+    "max_new_tokens": 8,
+    "timeout_seconds": 60
+  },
+  "probe": {
+    "repeats": 1,
+    "warmup": 0,
+    "timeout_seconds": 60
+  },
+  "startup_timeout": 15,
+  "request_timeout": 20
+}
